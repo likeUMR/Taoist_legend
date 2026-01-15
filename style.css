@@ -1,0 +1,398 @@
+:root {
+  --bg-black: #000;
+  --game-white: #f3f4f6;
+  --line-gray: #d1d5db;
+  --text-dark: #111827;
+  --yellow: #facc15;
+  --green: #4ade80;
+  --blue: #3b82f6;
+  --red: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-black);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: sans-serif;
+  overflow: hidden;
+}
+
+#game-container {
+  width: 540px;
+  height: 1200px;
+  background: var(--game-white);
+  background-image: linear-gradient(var(--line-gray) 1px, transparent 1px);
+  background-size: 100% 40px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 顶部资源栏 */
+.top-bar {
+  display: flex;
+  padding: 15px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.res-group {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.res-item {
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.icon { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+.coin { background: var(--yellow); }
+.ingot { background: #fbbf24; }
+.stone { background: #f59e0b; }
+
+.menu-btn {
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: bold;
+  position: relative;
+  margin-left: 10px;
+}
+
+.dot { width: 10px; height: 10px; background: var(--red); border-radius: 50%; border: 2px solid #fff; position: absolute; top: -5px; right: -5px; }
+
+/* 2. 关卡 */
+.stage-section {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.floor-tag {
+  background: #374151;
+  color: #fff;
+  display: inline-block;
+  padding: 6px 80px; /* Widen horizontally */
+  border-radius: 4px;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.retry-btn {
+  display: block;
+  margin: 0 auto;
+  background: var(--yellow);
+  border: 2px solid #000;
+  border-bottom: 6px solid #000;
+  border-radius: 8px;
+  padding: 6px 20px; /* Smaller padding */
+  font-size: 18px; /* Smaller font */
+  font-weight: bold;
+}
+
+/* 3. 战斗区 */
+.battle-scene {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 80px 1fr 80px; /* Narrower side columns to move buttons closer to edge */
+  padding: 5px; /* Less padding */
+  min-height: 400px;
+}
+
+.col-left, .col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 20px;
+}
+
+.entry-btn {
+  width: 60px; /* 50 * 1.2 */
+  height: 60px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 8px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.buff-btn {
+  width: 65px; /* 54 * 1.2 ≈ 65 */
+  height: 65px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.col-center { position: relative; }
+.battle-wrap { position: relative; height: 100%; width: 100%; }
+
+.stickman {
+  width: 40px;
+  height: 80px;
+  background: #333;
+  position: absolute;
+  border-radius: 4px;
+}
+
+.hp-line {
+  position: absolute;
+  top: -15px;
+  left: 0;
+  width: 50px;
+  height: 6px;
+  background: #ddd;
+  border: 1px solid #000;
+}
+
+.hp-line::after { content:''; display:block; width:40%; height:100%; background:var(--red); }
+.hp-line.full::after { width: 100%; background: var(--green); }
+
+.enemy-1 { top: 20%; left: 30%; }
+.player-1 { bottom: 20%; left: 50%; background: var(--blue); }
+
+.speech {
+  position: absolute;
+  bottom: 35%;
+  left: 10%;
+  background: #fff;
+  border: 2px solid #000;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* 4. 角色状态与技能区 (重构) */
+.player-status {
+  padding: 15px;
+  background: rgba(255,255,255,0.7);
+  border-top: 3px solid #000;
+}
+
+.stat-row-combined {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-label { font-weight: bold; font-size: 18px; }
+
+.progress-bg.mini {
+  flex: 1;
+  height: 24px;
+  background: #4b5563;
+  border: 2px solid #000;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.fill { height: 100%; }
+.fill.green { background: var(--green); }
+.fill.blue { background: var(--blue); }
+
+.val {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #000;
+}
+
+/* 技能框放在底部右侧 (对称放置) */
+.skill-slots-bottom {
+  position: absolute;
+  top: -85px;
+  right: 15px;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+
+.skill-slot {
+  width: 48px;
+  height: 48px;
+  background: #cbd5e1;
+  border: 3px solid #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.hero-center-display {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.meditation-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px; /* Reduced to fit radii */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.meditator {
+  width: 70px;
+  height: 90px;
+  background: #374151;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  z-index: 10;
+  position: relative;
+}
+
+.pet-rings {
+  position: absolute;
+  bottom: 45px; /* 定位在小人中心 */
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.pet {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+}
+
+/* 通用旋转逻辑：先旋转角度，位移半径，再反向旋转角度使文字保持正方向 */
+/* 角度分配在 -60deg 到 60deg 之间 (对应 30-150 度数学极坐标) */
+
+/* 内圈 (3个, 半径 80px) */
+.inner.i1 { transform: translate(-50%, -50%) rotate(-60deg) translateY(-80px) rotate(60deg); }
+.inner.i2 { transform: translate(-50%, -50%) rotate(0deg) translateY(-80px) rotate(0deg); }
+.inner.i3 { transform: translate(-50%, -50%) rotate(60deg) translateY(-80px) rotate(-60deg); }
+
+/* 中圈 (5个, 半径 150px) */
+.middle.m1 { transform: translate(-50%, -50%) rotate(-60deg) translateY(-150px) rotate(60deg); }
+.middle.m2 { transform: translate(-50%, -50%) rotate(-30deg) translateY(-150px) rotate(30deg); }
+.middle.m3 { transform: translate(-50%, -50%) rotate(0deg) translateY(-150px) rotate(0deg); }
+.middle.m4 { transform: translate(-50%, -50%) rotate(30deg) translateY(-150px) rotate(-30deg); }
+.middle.m5 { transform: translate(-50%, -50%) rotate(60deg) translateY(-150px) rotate(-60deg); }
+
+/* 外圈 (7个, 半径 220px) */
+.outer.o1 { transform: translate(-50%, -50%) rotate(-60deg) translateY(-220px) rotate(60deg); }
+.outer.o2 { transform: translate(-50%, -50%) rotate(-40deg) translateY(-220px) rotate(40deg); }
+.outer.o3 { transform: translate(-50%, -50%) rotate(-20deg) translateY(-220px) rotate(20deg); }
+.outer.o4 { transform: translate(-50%, -50%) rotate(0deg) translateY(-220px) rotate(0deg); }
+.outer.o5 { transform: translate(-50%, -50%) rotate(20deg) translateY(-220px) rotate(-20deg); }
+.outer.o6 { transform: translate(-50%, -50%) rotate(40deg) translateY(-220px) rotate(-40deg); }
+.outer.o7 { transform: translate(-50%, -50%) rotate(60deg) translateY(-220px) rotate(-60deg); }
+
+
+/* 5. 底部固定栏 */
+.bottom-area {
+  position: relative;
+  background: #fff;
+}
+
+/* 卷轴式任务系统 */
+.quest-scroll {
+  position: absolute;
+  top: -85px;
+  left: 15px;
+  width: 160px; /* 约 1/4 宽度 */
+  background: #e2e8f0;
+  border: 2px solid #000;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 2px 2px 0 #000;
+  z-index: 10;
+}
+
+.quest-content {
+  font-size: 12px;
+  font-weight: bold;
+  border-bottom: 1px solid #94a3b8;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.quest-reward {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.nav-bar {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0 10px;
+  border-top: 3px solid #000;
+}
+
+.nav-btn {
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.nav-btn::before {
+  content: '';
+  display: block;
+  width: 70px;
+  height: 70px;
+  background: #9ca3af;
+  border: 3px solid #000;
+  border-radius: 50%;
+  margin: 0 auto 5px;
+}
+
+.nav-btn.active::before { background: var(--red); }

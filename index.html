@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Taoist Legend Game</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="game-container">
+      <!-- 1. 顶部资源栏 -->
+      <header class="top-bar">
+        <div class="res-group">
+          <div class="res-item"><i class="icon coin"></i>1606.4万</div>
+          <div class="res-item"><i class="icon ingot"></i>2057</div>
+          <div class="res-item"><i class="icon stone"></i>1.3万</div>
+        </div>
+        <div class="menu-btn">
+          <div class="menu-icon"><span></span><span></span><span></span></div>
+          菜单
+          <div class="dot"></div>
+        </div>
+      </header>
+
+      <!-- 2. 关卡进度 -->
+      <section class="stage-section">
+        <div class="floor-tag">第154层</div>
+        <button class="retry-btn">再次挑战</button>
+      </section>
+
+      <!-- 3. 核心战斗区 -->
+      <main class="battle-scene">
+        <div class="col-left">
+          <div class="entry-btn"><span>添加桌面</span></div>
+          <div class="entry-btn"><span>入口有奖</span></div>
+          <div class="entry-btn"><span>救救小美</span></div>
+          <div class="entry-btn"><span>仙友</span></div>
+          <div class="entry-btn hammer"><span>奖励已满</span></div>
+        </div>
+
+        <div class="col-center">
+          <div class="battle-wrap">
+            <div class="enemy-group">
+              <div class="stickman enemy-1">
+                <div class="hp-line"></div>
+              </div>
+            </div>
+            <div class="hero-group">
+              <div class="stickman player-1">
+                <div class="hp-line full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-right">
+          <div class="buff-btn">加速</div>
+          <div class="buff-btn">金币加成</div>
+          <div class="buff-btn">补充能量</div>
+          <div class="buff-btn">自动攻击</div>
+        </div>
+      </main>
+
+      <!-- 4. 角色状态与展示区 -->
+      <section class="player-status">
+        <!-- 耐久和能量合并为一行 -->
+        <div class="stat-row-combined">
+          <div class="stat-item">
+            <span class="mini-label">耐久</span>
+            <div class="progress-bg mini"><div class="fill green" style="width: 100%"></div><span class="val">1.5万/1.5万</span></div>
+          </div>
+          <div class="stat-item">
+            <span class="mini-label">能量</span>
+            <div class="progress-bg mini"><div class="fill blue" style="width: 100%"></div><span class="val">54.0/54.0</span></div>
+          </div>
+        </div>
+
+        <!-- 角色居中展示 -->
+        <div class="hero-center-display">
+          <div class="meditation-wrap">
+            <div class="meditator"></div>
+            <!-- 战宠三圈方阵 -->
+            <div class="pet-rings">
+              <!-- 内圈 3个 (r:80px) -->
+              <div class="pet inner i1">战宠1</div>
+              <div class="pet inner i2">战宠2</div>
+              <div class="pet inner i3">战宠3</div>
+              
+              <!-- 中圈 5个 (r:150px) -->
+              <div class="pet middle m1">战宠4</div>
+              <div class="pet middle m2">战宠5</div>
+              <div class="pet middle m3">战宠6</div>
+              <div class="pet middle m4">战宠7</div>
+              <div class="pet middle m5">战宠8</div>
+              
+              <!-- 外圈 7个 (r:220px) -->
+              <div class="pet outer o1">战宠9</div>
+              <div class="pet outer o2">战宠10</div>
+              <div class="pet outer o3">战宠11</div>
+              <div class="pet outer o4">战宠12</div>
+              <div class="pet outer o5">战宠13</div>
+              <div class="pet outer o6">战宠14</div>
+              <div class="pet outer o7">战宠15</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 底部固定栏 -->
+      <footer class="bottom-area">
+        <!-- 卷轴式任务 -->
+        <div class="quest-scroll">
+          <div class="quest-content">击杀5个敌人(0/5)</div>
+          <div class="quest-reward">x800</div>
+        </div>
+
+        <!-- 技能框 (对称放置) -->
+        <div class="skill-slots-bottom">
+          <div class="skill-slot"><span>技能1</span></div>
+          <div class="skill-slot"><span>技能2</span></div>
+        </div>
+        
+        <nav class="nav-bar">
+          <div class="nav-btn">武器<div class="dot"></div></div>
+          <div class="nav-btn">采集</div>
+          <div class="nav-btn active">冒险</div>
+          <div class="nav-btn">修炼</div>
+          <div class="nav-btn">技能</div>
+        </nav>
+      </footer>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
