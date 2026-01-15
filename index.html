@@ -11,7 +11,7 @@
       <!-- 1. 顶部资源栏 -->
       <header class="top-bar">
         <div class="res-group">
-          <div class="res-item"><i class="icon coin"></i>1606.4万</div>
+          <div class="res-item"><i class="icon coin"></i><span id="gold-val">0</span></div>
           <div class="res-item"><i class="icon ingot"></i>2057</div>
           <div class="res-item"><i class="icon stone"></i>1.3万</div>
         </div>
@@ -39,17 +39,8 @@
         </div>
 
         <div class="col-center">
-          <div class="battle-wrap">
-            <div class="enemy-group">
-              <div class="stickman enemy-1">
-                <div class="hp-line"></div>
-              </div>
-            </div>
-            <div class="hero-group">
-              <div class="stickman player-1">
-                <div class="hp-line full"></div>
-              </div>
-            </div>
+          <div id="battle-wrap" class="battle-wrap">
+            
           </div>
         </div>
 
@@ -63,10 +54,10 @@
 
       <!-- 4. 角色状态与展示区 -->
       <section class="player-status">
-        <!-- 耐久和能量合并为一行 -->
+        <!-- 生命和能量合并为一行 -->
         <div class="stat-row-combined">
           <div class="stat-item">
-            <span class="mini-label">耐久</span>
+            <span class="mini-label">生命</span>
             <div class="progress-bg mini"><div class="fill green" style="width: 100%"></div><span class="val">1.5万/1.5万</span></div>
           </div>
           <div class="stat-item">
@@ -118,17 +109,52 @@
         <div class="skill-slots-bottom">
           <div class="skill-slot"><span>技能1</span></div>
           <div class="skill-slot"><span>技能2</span></div>
+          <div class="skill-slot"><span>技能3</span></div>
+          <div class="skill-slot"><span>技能4</span></div>
+          <div class="skill-slot"><span>技能5</span></div>
+          <div class="skill-slot"><span>技能6</span></div>
+          <div class="skill-slot"><span>技能7</span></div>
+          <div class="skill-slot"><span>技能8</span></div>
         </div>
         
         <nav class="nav-bar">
-          <div class="nav-btn">武器<div class="dot"></div></div>
-          <div class="nav-btn">采集</div>
-          <div class="nav-btn active">冒险</div>
-          <div class="nav-btn">修炼</div>
-          <div class="nav-btn">技能</div>
+          <div class="nav-btn">
+            <div class="nav-icon">🐶</div>
+            <span>战宠</span>
+          </div>
+          <div class="nav-btn">
+            <div class="nav-icon">⚒️</div>
+            <span>采集</span>
+          </div>
+          <div class="nav-btn active">
+            <div class="nav-icon">⚔️</div>
+            <span>冒险</span>
+          </div>
+          <div class="nav-btn">
+            <div class="nav-icon">🧘</div>
+            <span>修炼</span>
+          </div>
+          <div class="nav-btn">
+            <div class="nav-icon">📜</div>
+            <span>技能</span>
+          </div>
         </nav>
       </footer>
+
+      <!-- 战宠界面遮罩与面板 (移入容器内部以防越界) -->
+      <div id="pet-modal" class="modal-overlay hidden">
+        <div class="modal-content pet-panel">
+          <header class="modal-header">
+            <h2>战宠</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <!-- 内容由 PetUIRenderer 填充 -->
+          </div>
+        </div>
+      </div>
     </div>
+
     <script type="module" src="/main.js"></script>
   </body>
 </html>
