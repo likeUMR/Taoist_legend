@@ -4,7 +4,8 @@ import { PET_CONFIGS, getUpgradeInfo } from '../data/petConfigs.js';
  * 战宠集合管理类：管理玩家拥有的战宠状态及其数值计算
  */
 export class PetCollection {
-  constructor() {
+  constructor(cultivationManager = null) {
+    this.cultivationManager = cultivationManager;
     // 初始状态：只解锁第 1 个战宠
     this.ownedPets = [
       { id: 1, level: 0 } // 注意：从等级 0 开始
@@ -61,6 +62,17 @@ export class PetCollection {
         
         const currentCfg = this.upgradeConfigs.get(currentLevel) || { atkMult: 1, hpMult: 1 };
         const nextCfg = this.upgradeConfigs.get(nextLevel);
+        
+        // 应用修炼系统的金币消耗加成
+        let upgradeCost = 0;
+        if (nextCfg) {
+          if (nextCfg.isBreakthrough) {
+            upgradeCost = nextCfg.costStamina;
+          } else {
+            const costReduction = this.cultivationManager ? this.cultivationManager.getEffect('金币消耗') : 1.0;
+            upgradeCost = Math.floor(nextCfg.costGold / costReduction);
+          }
+        }
 
         result.push({
           ...config,
@@ -70,7 +82,7 @@ export class PetCollection {
           currentHp: config.baseHp * currentCfg.hpMult,
           nextAtk: nextCfg ? config.baseAtk * nextCfg.atkMult : null,
           nextHp: nextCfg ? config.baseHp * nextCfg.hpMult : null,
-          upgradeCost: nextCfg ? (nextCfg.isBreakthrough ? nextCfg.costStamina : nextCfg.costGold) : 0,
+          upgradeCost: upgradeCost,
           successRate: nextCfg ? nextCfg.successRate : 0,
           isBreakthrough: nextCfg ? nextCfg.isBreakthrough : false,
           hasMaxLevel: !nextCfg
@@ -130,8 +142,11 @@ export class PetCollection {
 
   /**
    * 强化逻辑
+   * @param {number} petId 
+   * @param {CurrencyManager} currencyManager 
+   * @param {boolean} isFreeAd 是否使用免费广告升级
    */
-  upgradePet(petId, currencyManager) {
+  upgradePet(petId, currencyManager, isFreeAd = false) {
     const petState = this.ownedPets.find(p => p.id === petId);
     if (!petState) return { success: false, reason: "未解锁" };
 
@@ -142,27 +157,49 @@ export class PetCollection {
 
     // 消耗与条件检查
     if (nextCfg.isBreakthrough) {
-      // 突破：只要精华是正数就能点，可以扣成负数
+      // 突破：只要精华是正数就能点，可以扣成负数 (突破不参与广告)
       if (!currencyManager.spendEssence(nextCfg.costStamina, true)) {
         return { success: false, reason: "神兽精华已枯竭" };
       }
     } else {
-      // 普通强化：消耗金币
-      if (!currencyManager.spendGold(nextCfg.costGold)) {
-        return { success: false, reason: "金币不足" };
+      // 普通强化
+      if (!isFreeAd) {
+        // 非广告模式：消耗金币 (考虑修炼加成)
+        const costReduction = this.cultivationManager ? this.cultivationManager.getEffect('金币消耗') : 1.0;
+        const finalCost = Math.floor(nextCfg.costGold / costReduction);
+        
+        if (!currencyManager.spendGold(finalCost)) {
+          return { success: false, reason: "金币不足" };
+        }
       }
+      // 广告模式：不消耗，直接通过
     }
 
-    // 概率判定
-    const isSuccess = nextCfg.isBreakthrough ? true : (Math.random() <= nextCfg.successRate);
+    // 概率判定：如果是广告升级，强制 100% 成功
+    const isSuccess = (nextCfg.isBreakthrough || isFreeAd) ? true : (Math.random() <= nextCfg.successRate);
 
     if (isSuccess) {
       petState.level++;
-      // 记录强化成功 (突破不算强化成功)
+      
+      // 判定双倍强化 (广告升级也可以触发双倍强化)
+      let doubleUpgraded = false;
+      if (!nextCfg.isBreakthrough && this.cultivationManager) {
+        const doubleRate = this.cultivationManager.getEffect('双倍强化') - 1;
+        if (Math.random() <= doubleRate) {
+          const superNextLevel = petState.level + 1;
+          const superNextCfg = this.upgradeConfigs.get(superNextLevel);
+          if (superNextCfg && !superNextCfg.isBreakthrough) {
+            petState.level++;
+            doubleUpgraded = true;
+            console.log(`【系统】触发双倍强化！直接升级到等级: ${petState.level}`);
+          }
+        }
+      }
+
       if (this.onUpgradeSuccess && !nextCfg.isBreakthrough) {
         this.onUpgradeSuccess();
       }
-      return { success: true, newLevel: petState.level };
+      return { success: true, newLevel: petState.level, doubleUpgraded };
     } else {
       return { success: false, reason: "强化失败" };
     }

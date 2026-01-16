@@ -22,8 +22,8 @@ export class PetUIRenderer {
     // 1. 构建统计头 HTML
     const headerInnerHTML = `
       <span>战宠总数量:${totals.count}</span>
-      <span>战宠总攻击:${formatNumber(totals.totalAtk)}</span>
-      <span>战宠总生命:${formatNumber(totals.totalHp)}</span>
+      <span>战宠总攻击:${formatNumber(totals.totalAtk, true)}</span>
+      <span>战宠总生命:${formatNumber(totals.totalHp, true)}</span>
     `;
 
     // 2. 构建列表项 HTML
@@ -43,7 +43,7 @@ export class PetUIRenderer {
               <div class="pet-action">
                 <button class="unlock-btn" data-id="${pet.id}" ${!canAffordUnlock ? 'disabled' : ''}>
                   <span>解锁</span>
-                  <span class="cost">${formatNumber(pet.unlockCost)} 金币</span>
+                  <span class="cost">${formatNumber(pet.unlockCost, true)} 金币</span>
                 </button>
               </div>
             </div>
@@ -53,16 +53,26 @@ export class PetUIRenderer {
 
       const btnText = pet.isBreakthrough ? '突破' : '强化';
       const costClass = pet.isBreakthrough ? 'cost essence' : 'cost';
-      const rateText = pet.hasMaxLevel ? '已满级' : (pet.isBreakthrough ? '' : `(${Math.floor(pet.successRate * 100)}%)`);
       
       let canAfford = false;
+      let showAdBtn = false;
+      
       if (!pet.hasMaxLevel) {
         if (pet.isBreakthrough) {
-          canAfford = currentEssence > 0; // 突破逻辑：大于0即可
+          canAfford = currentEssence > 0;
         } else {
           canAfford = currentGold >= pet.upgradeCost;
+          // 如果买不起但有广告次数，且不是突破项
+          if (!canAfford && window.videoManager && window.videoManager.getRemaining('pet') > 0) {
+            showAdBtn = true;
+          }
         }
       }
+
+      // 广告升级不显示成功率
+      const rateText = pet.hasMaxLevel ? '已满级' : (pet.isBreakthrough || showAdBtn ? '' : `(${Math.floor(pet.successRate * 100)}%)`);
+      const adClass = showAdBtn ? 'ad-style' : '';
+      const videoIcon = showAdBtn ? '<i class="icon-video"></i> ' : '';
 
       return `
         <div class="pet-item" data-id="${pet.id}">
@@ -81,9 +91,12 @@ export class PetUIRenderer {
               </div>
             </div>
             <div class="pet-action">
-              <button class="upgrade-btn ${pet.isBreakthrough ? 'breakthrough' : ''}" data-id="${pet.id}" ${pet.hasMaxLevel || !canAfford ? 'disabled' : ''}>
-                <span class="rate">${btnText}${rateText}</span>
-                ${pet.hasMaxLevel ? '' : `<span class="${costClass}">${formatNumber(pet.upgradeCost)}</span>`}
+              <button class="upgrade-btn ${pet.isBreakthrough ? 'breakthrough' : ''} ${adClass}" 
+                data-id="${pet.id}" 
+                data-ad="${showAdBtn}"
+                ${(pet.hasMaxLevel || (!canAfford && !showAdBtn)) ? 'disabled' : ''}>
+                <span class="rate">${videoIcon}${btnText}${rateText}</span>
+                ${pet.hasMaxLevel ? '' : `<span class="${costClass}">${formatNumber(pet.upgradeCost, true)}</span>`}
               </button>
             </div>
           </div>
@@ -98,6 +111,9 @@ export class PetUIRenderer {
         <div class="pet-scroll-view">
           <div class="pet-list-content"></div>
         </div>
+        <div class="ad-count-footer">
+          本日视频强化次数: <span class="ad-val">0/10</span>
+        </div>
         <div class="pet-essence-footer">
           <div class="essence-bar-wrap">
             <div class="essence-fill"></div>
@@ -107,9 +123,16 @@ export class PetUIRenderer {
       `;
     }
 
-    // 更新内部数据，保持 DOM 结构引用稳定
+    // 更新内部数据
     this.container.querySelector('.pet-stats-header').innerHTML = headerInnerHTML;
     this.container.querySelector('.pet-list-content').innerHTML = listHTML;
+    
+    // 更新广告次数显示
+    if (window.videoManager) {
+      const remaining = window.videoManager.getRemaining('pet');
+      const limit = window.videoManager.getLimit('pet');
+      this.container.querySelector('.ad-val').textContent = `${remaining}/${limit}`;
+    }
   }
 
   /**
@@ -125,7 +148,7 @@ export class PetUIRenderer {
     const percent = Math.max(0, Math.min(100, (current / max) * 100));
     fill.style.width = `${percent}%`;
     
-    let statusText = `神兽精华: ${formatNumber(current)}/${max}`;
+    let statusText = `神兽精华: ${formatNumber(current, true)}/${max}`;
     if (current < max) {
       const mins = Math.floor(timeToNext / 60);
       const secs = timeToNext % 60;

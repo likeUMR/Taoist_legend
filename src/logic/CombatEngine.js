@@ -5,6 +5,11 @@ export class CombatEngine {
   constructor() {
     this.entities = [];
     this.lastTime = performance.now();
+    this.combatTimeScale = 1.0; // 战斗倍速
+  }
+
+  setCombatTimeScale(scale) {
+    this.combatTimeScale = scale;
   }
 
   addEntity(entity) {
@@ -20,7 +25,8 @@ export class CombatEngine {
    */
   resolveSeparation() {
     // 处理所有活跃对象之间的挤开，避免重叠
-    const activeEntities = this.entities.filter(e => !e.isDead);
+    // 排除已死亡或还在待机出击状态的实体 (待机状态不参与碰撞)
+    const activeEntities = this.entities.filter(e => !e.isDead && !(e.deployDelay > 0));
 
     for (let i = 0; i < activeEntities.length; i++) {
       for (let j = i + 1; j < activeEntities.length; j++) {
@@ -59,18 +65,23 @@ export class CombatEngine {
 
   update() {
     const now = performance.now();
-    let dt = (now - this.lastTime) / 1000; // 秒
+    const rawDt = (now - this.lastTime) / 1000; // 真实流逝秒数
     this.lastTime = now;
 
-    // 限制 dt 最大值为 0.1 秒，防止切屏恢复或大幅掉帧导致的逻辑跳跃/瞬移
-    dt = Math.min(dt, 0.1);
+    // 应用战斗倍速加成
+    let combatDt = rawDt * this.combatTimeScale;
+
+    // 限制 combatDt 最大值，防止逻辑跳跃
+    combatDt = Math.min(combatDt, 0.1 * this.combatTimeScale);
 
     // 1. 逻辑更新
     for (const entity of this.entities) {
-      entity.update(dt, this);
+      entity.update(combatDt, this);
     }
 
     // 2. 物理修正 (挤开重叠)
     this.resolveSeparation();
+
+    return { combatDt, rawDt };
   }
 }

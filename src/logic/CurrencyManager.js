@@ -15,15 +15,63 @@ export class CurrencyManager {
     this.onEssenceUpdate = null; // 精华 UI 更新回调
     this._lastUIRemain = -1; // 上次发送给 UI 的剩余秒数，用于性能优化
     this._lastEssence = 15; // 上次发送给 UI 的精华数值，用于性能优化
+    
+    this.goldMultiplier = 1.0; // 金币加成 (来自 StatManager)
+    this.passiveGoldMultiplier = 1.0; // 来自修炼系统的被动加成
+    this.recoveryAccumulator = 0; // 毫秒累积器，用于处理 dt 恢复 (基于真实时间)
+  }
+
+  setGoldMultiplier(multiplier) {
+    this.goldMultiplier = multiplier;
+  }
+
+  setPassiveGoldMultiplier(multiplier) {
+    this.passiveGoldMultiplier = multiplier;
   }
 
   /**
-   * 更新恢复逻辑 (建议在游戏主循环中调用)
+   * 更新恢复逻辑
+   * @param {number} dt 真实秒数 (不受战斗倍速影响)
    */
-  updateRecovery() {
-    const remain = this.getTimeToNext();
+  updateRecovery(dt = 0) {
+    // 如果没有传 dt，回退到基于真实时间的逻辑
+    if (dt === 0) {
+      this._updateRecoveryRealTime();
+      return;
+    }
+
+    if (this.essence >= this.maxEssence) {
+      this.lastRecoveryTime = Date.now();
+      this.recoveryAccumulator = 0;
+      if (this._lastUIRemain !== 0) {
+        this._notifyEssenceUpdate(0);
+      }
+      return;
+    }
+
+    // 基于真实 dt 的累积逻辑 (不乘以 timeScale)
+    this.recoveryAccumulator += dt * 1000;
     
-    // 只有当剩余秒数发生变化时，才通知 UI 更新，避免每帧操作 DOM
+    if (this.recoveryAccumulator >= this.recoveryInterval) {
+      const pointsToAdd = Math.floor(this.recoveryAccumulator / this.recoveryInterval);
+      this.essence = Math.min(this.maxEssence, this.essence + pointsToAdd);
+      this.recoveryAccumulator %= this.recoveryInterval;
+      this.lastRecoveryTime = Date.now();
+      
+      this._notifyEssenceUpdate(this.getTimeToNext());
+    } else {
+      const remain = this.getTimeToNext();
+      if (remain !== this._lastUIRemain) {
+        this._notifyEssenceUpdate(remain);
+      }
+    }
+  }
+
+  /**
+   * 原有的基于真实时间的恢复逻辑 (私有)
+   */
+  _updateRecoveryRealTime() {
+    const remain = this.getTimeToNext();
     const needsUIUpdate = remain !== this._lastUIRemain;
 
     if (this.essence < this.maxEssence) {
@@ -34,23 +82,21 @@ export class CurrencyManager {
         const pointsToAdd = Math.floor(elapsed / this.recoveryInterval);
         this.essence = Math.min(this.maxEssence, this.essence + pointsToAdd);
         this.lastRecoveryTime = now - (elapsed % this.recoveryInterval);
-        
-        if (this.onEssenceUpdate) {
-          this.onEssenceUpdate(this.essence, this.getTimeToNext());
-          this._lastUIRemain = this.getTimeToNext();
-        }
-      } else if (needsUIUpdate && this.onEssenceUpdate) {
-        this.onEssenceUpdate(this.essence, remain);
-        this._lastUIRemain = remain;
+        this._notifyEssenceUpdate(this.getTimeToNext());
+      } else if (needsUIUpdate) {
+        this._notifyEssenceUpdate(remain);
       }
     } else if (needsUIUpdate) {
-      // 满值时，重置恢复计时器，并通知 UI
       this.lastRecoveryTime = Date.now();
-      if (this.onEssenceUpdate) {
-        this.onEssenceUpdate(this.essence, 0);
-        this._lastUIRemain = 0;
-      }
+      this._notifyEssenceUpdate(0);
     }
+  }
+
+  _notifyEssenceUpdate(remain) {
+    if (this.onEssenceUpdate) {
+      this.onEssenceUpdate(this.essence, remain);
+    }
+    this._lastUIRemain = remain;
   }
 
   /**
@@ -58,6 +104,12 @@ export class CurrencyManager {
    */
   getTimeToNext() {
     if (this.essence >= this.maxEssence) return 0;
+    
+    // 基于真实时间的累积器计算
+    if (this.recoveryAccumulator > 0) {
+      return Math.ceil((this.recoveryInterval - this.recoveryAccumulator) / 1000);
+    }
+    
     const elapsed = Date.now() - this.lastRecoveryTime;
     return Math.ceil((this.recoveryInterval - elapsed) / 1000);
   }
@@ -88,10 +140,16 @@ export class CurrencyManager {
 
   /**
    * 增加金币
+   * @param {number} amount 
+   * @param {boolean} applyBonus 是否应用加成 (默认 false)
    */
-  addGold(amount) {
+  addGold(amount, applyBonus = false) {
     if (amount <= 0) return;
-    this.gold += amount;
+    
+    const finalMultiplier = applyBonus ? (this.goldMultiplier * this.passiveGoldMultiplier) : 1.0;
+    const finalAmount = Math.floor(amount * finalMultiplier);
+    this.gold += finalAmount;
+    
     if (this.onUpdate) {
       this.onUpdate(this.gold);
     }

@@ -9,10 +9,17 @@ export class Pet extends Entity {
     this.attackRange = 40;
     this.attackCooldown = 0;
     this.atkSpeed = options.atkSpeed || 1.0; // 攻击间隔(秒)，默认1秒一次
+    this.deployDelay = options.deployDelay || 0; // 出击延迟(秒)
   }
 
   update(dt, engine) {
     if (this.isDead) return;
+
+    // 处理出击延迟
+    if (this.deployDelay > 0) {
+      this.deployDelay -= dt;
+      return; // 延迟未结束，不执行任何逻辑
+    }
 
     // 寻找最近的敌人
     const enemies = engine.entities.filter(e => e.side === 'enemy' && !e.isDead);

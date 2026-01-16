@@ -45,8 +45,14 @@
         </div>
 
         <div class="col-right">
-          <div class="buff-btn">加速</div>
-          <div class="buff-btn">金币加成</div>
+          <div class="buff-btn">
+            战斗加速
+            <div class="level-badge-diamond"><span>0</span></div>
+          </div>
+          <div class="buff-btn">
+            金币加成
+            <div class="level-badge-diamond"><span>0</span></div>
+          </div>
           <div class="buff-btn">补充能量</div>
           <div class="buff-btn">自动攻击</div>
         </div>
@@ -73,25 +79,25 @@
             <!-- 战宠三圈方阵 -->
             <div class="pet-rings">
               <!-- 内圈 3个 (r:80px) -->
-              <div class="pet inner i1">战宠1</div>
-              <div class="pet inner i2">战宠2</div>
-              <div class="pet inner i3">战宠3</div>
+              <div class="pet inner i1"><div class="pet-inner-ik"></div>战宠1</div>
+              <div class="pet inner i2"><div class="pet-inner-ik"></div>战宠2</div>
+              <div class="pet inner i3"><div class="pet-inner-ik"></div>战宠3</div>
               
               <!-- 中圈 5个 (r:150px) -->
-              <div class="pet middle m1">战宠4</div>
-              <div class="pet middle m2">战宠5</div>
-              <div class="pet middle m3">战宠6</div>
-              <div class="pet middle m4">战宠7</div>
-              <div class="pet middle m5">战宠8</div>
+              <div class="pet middle m1"><div class="pet-inner-ik"></div>战宠4</div>
+              <div class="pet middle m2"><div class="pet-inner-ik"></div>战宠5</div>
+              <div class="pet middle m3"><div class="pet-inner-ik"></div>战宠6</div>
+              <div class="pet middle m4"><div class="pet-inner-ik"></div>战宠7</div>
+              <div class="pet middle m5"><div class="pet-inner-ik"></div>战宠8</div>
               
               <!-- 外圈 7个 (r:220px) -->
-              <div class="pet outer o1">战宠9</div>
-              <div class="pet outer o2">战宠10</div>
-              <div class="pet outer o3">战宠11</div>
-              <div class="pet outer o4">战宠12</div>
-              <div class="pet outer o5">战宠13</div>
-              <div class="pet outer o6">战宠14</div>
-              <div class="pet outer o7">战宠15</div>
+              <div class="pet outer o1"><div class="pet-inner-ik"></div>战宠9</div>
+              <div class="pet outer o2"><div class="pet-inner-ik"></div>战宠10</div>
+              <div class="pet outer o3"><div class="pet-inner-ik"></div>战宠11</div>
+              <div class="pet outer o4"><div class="pet-inner-ik"></div>战宠12</div>
+              <div class="pet outer o5"><div class="pet-inner-ik"></div>战宠13</div>
+              <div class="pet outer o6"><div class="pet-inner-ik"></div>战宠14</div>
+              <div class="pet outer o7"><div class="pet-inner-ik"></div>战宠15</div>
             </div>
           </div>
         </div>
@@ -123,8 +129,8 @@
             <span>战宠</span>
           </div>
           <div class="nav-btn">
-            <div class="nav-icon">⚒️</div>
-            <span>采集</span>
+            <div class="nav-icon">💫</div>
+            <span>光环</span>
           </div>
           <div class="nav-btn active">
             <div class="nav-icon">⚔️</div>
@@ -150,6 +156,93 @@
           </header>
           <div class="modal-body">
             <!-- 内容由 PetUIRenderer 填充 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 金币加成界面 -->
+      <div id="bonus-modal" class="modal-overlay hidden">
+        <div class="modal-content bonus-panel small">
+          <header class="modal-header">
+            <h2>金币提升</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="bonus-upgrade-card">
+              <p class="bonus-desc">*永久提升金币获取数量</p>
+              <div class="bonus-compare-box">
+                <div class="compare-header">
+                  <span>【现在】</span>
+                  <span>【升级后】</span>
+                </div>
+                <div class="compare-main">
+                  <span class="bonus-label">金币提升：</span>
+                  <div class="values">
+                    <span class="curr-val">+40%</span>
+                    <span class="arrow">≫</span>
+                    <span class="next-val">+60%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bonus-footer">
+                <button class="modal-action-btn close-action-btn">关闭</button>
+                <button class="modal-action-btn upgrade-action-btn">
+                  <i class="icon-video"></i> 升级
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 战斗加速界面 -->
+      <div id="speed-modal" class="modal-overlay hidden">
+        <div class="modal-content bonus-panel small">
+          <header class="modal-header">
+            <h2>战斗加速</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="bonus-upgrade-card">
+              <p class="bonus-desc">*永久提升战斗整体速率</p>
+              <div class="bonus-compare-box">
+                <div class="compare-header">
+                  <span>【现在】</span>
+                  <span>【升级后】</span>
+                </div>
+                <div class="compare-main">
+                  <span class="bonus-label">战斗速度：</span>
+                  <div class="values">
+                    <span class="curr-val">100%</span>
+                    <span class="arrow">≫</span>
+                    <span class="next-val">150%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bonus-footer">
+                <button class="modal-action-btn close-action-btn">关闭</button>
+                <button class="modal-action-btn upgrade-action-btn">
+                  <i class="icon-video"></i> 升级
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 修炼界面 -->
+      <div id="cultivation-modal" class="modal-overlay hidden">
+        <div class="modal-content cultivation-panel">
+          <header class="modal-header">
+            <h2>修炼</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="pet-scroll-view">
+              <div class="pet-list-content">
+                <!-- 内容由 CultivationUIRenderer 填充 -->
+              </div>
+            </div>
           </div>
         </div>
       </div>

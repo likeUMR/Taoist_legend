@@ -150,6 +150,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative; /* 为等级角标定位 */
+}
+
+.level-badge-diamond {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border: 2px solid #000;
+  transform: translate(20%, 20%) rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+
+.level-badge-diamond span {
+  transform: rotate(-45deg); /* 反向旋转文字 */
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+  display: block;
 }
 
 .col-center { position: relative; }
@@ -314,6 +339,18 @@ body {
   white-space: nowrap;
 }
 
+/* 战宠生成参考中心点 */
+.pet-inner-ik {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 2px;
+  background: transparent;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 /* 通用旋转逻辑：先旋转角度，位移半径，再反向旋转角度使文字保持正方向 */
 /* 角度分配在 -60deg 到 60deg 之间 (对应 30-150 度数学极坐标) */
 
@@ -448,27 +485,17 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  /* 移除原本的 flex 布局和 margin 偏移，改用内部绝对定位锚点 */
   transition: transform 0.1s linear; /* 平滑移动 */
   z-index: 100;
   pointer-events: none;
 }
 
-/* 玩家方偏移 (40px图标) */
-.player.combat-entity {
-  margin-left: -20px; 
-  margin-top: -30px;  /* 6px血条 + 4px间距 + 20px图标一半 */
-}
-
-/* 敌人方偏移 (52px图标 + 攻击力标签) */
-.enemy.combat-entity {
-  margin-left: -26px; /* 52px图标一半 */
-  margin-top: -52px;  /* 14px标签 + 2px间距 + 6px血条 + 4px间距 + 26px图标一半 */
-}
-
 .entity-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%); /* 确保图标中心始终在 (x, y) 坐标点 */
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -492,20 +519,29 @@ body {
 .player .entity-icon { background: var(--blue); color: #fff; }
 
 .entity-hp-bar {
+  position: absolute;
+  left: 0;
+  /* 根据图标大小动态调整位置，确保在图标上方 */
+  top: -30px; 
+  transform: translateX(-50%);
   width: 40px;
   height: 6px;
   background: #333;
   border: 1px solid #000;
-  margin-bottom: 4px;
   border-radius: 3px;
   overflow: hidden;
 }
 
 .enemy .entity-hp-bar {
   width: 52px;
+  top: -40px; /* 敌人图标大，血条再往上一点 */
 }
 
 .entity-atk-label {
+  position: absolute;
+  left: 0;
+  top: -58px; /* 在血条上方 */
+  transform: translateX(-50%);
   font-size: 12px;
   font-weight: bold;
   color: #000;
@@ -513,7 +549,6 @@ body {
   border: 1px solid #000;
   padding: 0 4px;
   border-radius: 3px;
-  margin-bottom: 2px;
   white-space: nowrap;
 }
 
@@ -538,7 +573,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  display: flex; 
 }
 
 /* 隐藏状态类 */
@@ -556,6 +590,11 @@ body {
   flex-direction: column;
   box-shadow: 0 10px 0 rgba(0,0,0,0.2);
   position: relative;
+}
+
+.modal-content.small {
+  height: auto;
+  max-height: 500px;
 }
 
 .modal-header {
@@ -805,6 +844,24 @@ body {
   background: var(--blue);
 }
 
+.upgrade-btn.ad-style {
+  background: var(--blue) !important;
+  color: #fff;
+}
+
+.ad-count-footer {
+  text-align: center;
+  padding: 8px;
+  background: #f3f4f6;
+  border-top: 2px solid #000;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.ad-val {
+  color: var(--blue);
+}
+
 .upgrade-btn[disabled], .unlock-btn[disabled] {
   background: #9ca3af !important;
   cursor: not-allowed;
@@ -820,6 +877,189 @@ body {
 .pet-item.unlock-next .placeholder-text {
   margin-top: 0;
   font-size: 12px;
+}
+
+/* --- 金币加成面板特定样式 --- */
+.bonus-upgrade-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bonus-desc {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.bonus-compare-box {
+  width: 100%;
+  background: #9ca3af; /* 灰色背景 */
+  border: 3px solid #000;
+  border-radius: 4px;
+  padding: 30px 20px;
+  margin-bottom: 20px;
+}
+
+.compare-header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 40px;
+  color: #4b5563;
+  font-size: 14px;
+  margin-bottom: 20px;
+  padding-right: 20px;
+}
+
+.compare-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bonus-label {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.bonus-compare-box .values {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.curr-val {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.next-val {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fbbf24; /* 金黄色 */
+  text-shadow: 1px 1px 0 #000;
+}
+
+.bonus-compare-box .arrow {
+  font-size: 24px;
+  color: var(--yellow);
+  font-weight: bold;
+}
+
+.bonus-footer {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.modal-action-btn {
+  flex: 1;
+  height: 50px;
+  border: 3px solid #000;
+  border-bottom-width: 6px;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.close-action-btn {
+  background: var(--yellow);
+}
+
+.upgrade-action-btn {
+  background: var(--blue);
+  color: #fff;
+}
+
+.modal-action-btn:active {
+  border-bottom-width: 3px;
+  transform: translateY(3px);
+}
+
+.modal-action-btn[disabled] {
+  background: #9ca3af !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-bottom-width: 3px;
+  transform: none;
+}
+
+.icon-video::before {
+  content: '📺';
+  font-size: 20px;
+  font-style: normal;
+}
+
+/* --- 修炼面板特定样式 --- */
+.cultivation-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+}
+
+.cult-icon-box {
+  width: 70px;
+  height: 70px;
+  background: #f3f4f6;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.cult-info {
+  flex: 1;
+}
+
+.cult-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cult-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.cult-level {
+  font-size: 18px;
+  font-weight: bold;
+  color: #f97316; /* 橙色 */
+}
+
+.cult-desc {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.cult-value-row {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.cult-value-row .arrow {
+  margin: 0 5px;
+  color: #9ca3af;
+}
+
+.cult-action {
+  flex-shrink: 0;
 }
 
 /* --- 强化反馈动画 --- */

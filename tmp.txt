@@ -1,14 +1,1 @@
-对于战宠的强化，现在也读取这个表格D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\public\data\upgrades.csv
-System为强化_v1的数据
-
-CostGold为强化需要的金币，Atk和Hp的Multi为强化后，Hp和Atk在基础上面的乘数，SuccessRate为成功率，如果失败，则正常扣钱但是不提升等级
-
-IsBreakthrough=True时候，升级不消耗金钱，而是消耗神兽精华，消耗数值为CostStamina，当神兽精华数量为正的时候，总是可以升级（即使数量不足，升级后可以扣成负数），当精华数量非正的时候，不能升级（升级按钮显示为灰色，同样的，金币数量不足的时候也显示为灰色）
-
-
-
-现在设计任务系统，就是左下角的那个小块
-需要记录玩家通关的最高关卡数，和累计的强化次数，用于判断任务完成。
-任务依次进行，完成背景改为金色，之后点击任务的小块可以领取奖励（金币）并开启下一个任务
-任务序列的奖励和要求，在这个表格中
-D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\public\data\tasks.csv
+观察到，有的战宠从玩家区域前往作战区域的时候，经过边界的时候有位置的跳变，是不是clamp导致的还是什么原因导致的？请分析一下问题（有的经过不跳变，有的跳变，很奇怪）

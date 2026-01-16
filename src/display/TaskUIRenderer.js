@@ -1,3 +1,5 @@
+import { formatNumber } from '../utils/format.js';
+
 /**
  * 任务 UI 渲染器：负责任务小块的状态显示与交互
  */
@@ -45,8 +47,8 @@ export class TaskUIRenderer {
     let target = 0;
 
     if (task.levelReq !== null) {
-      descBase = `到达第 ${task.levelReq} 层`;
-      current = this.taskManager.maxLevelReached;
+      descBase = `通关第 ${task.levelReq} 层`;
+      current = Math.max(0, this.taskManager.maxLevelReached - 1);
       target = task.levelReq;
     } else if (task.upgradeReq !== null) {
       descBase = `总强化成功 ${task.upgradeReq} 次`;
@@ -54,8 +56,8 @@ export class TaskUIRenderer {
       target = task.upgradeReq;
     }
 
-    contentEl.innerHTML = `${descBase} <span class="${progressClass}">(${current}/${target})</span>`;
-    rewardEl.innerHTML = `<span class="reward-coin-icon"></span>${Math.floor(task.rewardGold)}`;
+    contentEl.innerHTML = `${descBase} <span class="${progressClass}">(${formatNumber(current, true)}/${formatNumber(target, true)})</span>`;
+    rewardEl.innerHTML = `<span class="reward-coin-icon"></span>${formatNumber(task.rewardGold, true)}`;
 
     // 检查是否完成并更新背景
     if (isCompleted) {

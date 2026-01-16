@@ -38,8 +38,9 @@ export class PetManager {
    * 生成指定数量的战宠
    * @param {Array<Object>} petsData 战宠属性列表
    * @param {Array<{x: number, y: number}>} positions 预设的坐标点列表
+   * @param {number} deployInterval 出击间隔(秒)，默认为 1s
    */
-  spawnPets(petsData, positions) {
+  spawnPets(petsData, positions, deployInterval = 1.0) {
     const limit = Math.min(petsData.length, positions.length);
     for (let i = 0; i < limit; i++) {
       const pos = positions[i];
@@ -53,7 +54,8 @@ export class PetManager {
         atk: data.atk,
         atkSpeed: data.atkSpeed || 0.8,
         name: `宠${data.id}`,
-        worldBounds: this.worldBounds
+        worldBounds: this.worldBounds,
+        deployDelay: i * deployInterval // 设置出击延迟
       });
 
       this.pets.push(pet);

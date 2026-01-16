@@ -18,6 +18,8 @@ export class LevelManager {
     this.retryBtn = document.querySelector('.retry-btn');
     
     this.isTransitioning = false;
+    this.transitionTimer = 0; // 转换计时器
+    this.transitionCallback = null; // 转换结束后的回调
     this.lastFailedLevel = -1; // 记录最近一次失败的关卡
     this.initEvents();
   }
@@ -137,9 +139,23 @@ export class LevelManager {
 
   /**
    * 每帧检查胜负
+   * @param {number} dt 战斗倍速影响后的 dt
    */
-  update() {
-    if (this.isTransitioning) return;
+  update(dt) {
+    if (this.isTransitioning) {
+      if (this.transitionTimer > 0) {
+        this.transitionTimer -= dt;
+        if (this.transitionTimer <= 0) {
+          this.transitionTimer = 0;
+          if (this.transitionCallback) {
+            const cb = this.transitionCallback;
+            this.transitionCallback = null;
+            cb();
+          }
+        }
+      }
+      return;
+    }
 
     // 检查敌人是否全灭 (胜利)
     const enemiesAlive = this.enemyManager.enemies.filter(e => !e.isDead).length;
@@ -155,41 +171,48 @@ export class LevelManager {
         this.fail();
       } else {
         // 第0层特殊处理：战宠全灭也重置但不降级
-        this.isTransitioning = true;
-        setTimeout(() => this.loadLevel(0), 1000);
+        this.startTransition(1.0, () => this.loadLevel(0));
       }
     }
   }
 
-  win() {
+  /**
+   * 启动转换过程
+   * @param {number} duration 持续时间 (秒)
+   * @param {Function} callback 
+   */
+  startTransition(duration, callback) {
     this.isTransitioning = true;
-    
+    this.transitionTimer = duration;
+    this.transitionCallback = callback;
+  }
+
+  win() {
     // 如果当前层级小于最后失败的层级，则进入挂机模式
     const isRetrying = this.lastFailedLevel !== -1 && this.currentLevel < this.lastFailedLevel;
 
     if (isRetrying) {
       console.log(`【系统】第 ${this.currentLevel} 层挑战成功！(当前处于挂机模式，不自动晋级)`);
-      setTimeout(() => {
+      this.startTransition(1.5, () => {
         this.loadLevel(this.currentLevel); // 重复本关
-      }, 1500);
+      });
     } else {
       console.log(`【系统】第 ${this.currentLevel} 层挑战成功！即将进入下一层...`);
-      setTimeout(() => {
+      this.startTransition(1.5, () => {
         this.lastFailedLevel = -1; // 确保清除过时的记录
         this.loadLevel(this.currentLevel + 1);
-      }, 1500);
+      });
     }
   }
 
   fail() {
-    this.isTransitioning = true;
     console.log(`【系统】第 ${this.currentLevel} 层挑战失败！退回上一层...`);
     
     // 记录失败的关卡
     this.lastFailedLevel = this.currentLevel;
 
-    setTimeout(() => {
+    this.startTransition(1.5, () => {
       this.loadLevel(Math.max(0, this.currentLevel - 1));
-    }, 1500);
+    });
   }
 }

@@ -77,8 +77,8 @@ export class TaskManager {
     const task = this.getCurrentTask();
     if (!task) return false;
 
-    // 检查关卡要求 (只要当前到达的关卡编号 >= 要求即可)
-    if (task.levelReq !== null && this.maxLevelReached < task.levelReq) {
+    // 检查通关要求 (当前到达的关卡编号需要 > 要求关卡，即表示该关已通关)
+    if (task.levelReq !== null && this.maxLevelReached <= task.levelReq) {
       return false;
     }
 
@@ -115,7 +115,7 @@ export class TaskManager {
     if (!task) return "全部任务已完成";
 
     if (task.levelReq !== null) {
-      return `到达第 ${task.levelReq} 层 (${this.maxLevelReached}/${task.levelReq})`;
+      return `通关第 ${task.levelReq} 层 (${Math.max(0, this.maxLevelReached - 1)}/${task.levelReq})`;
     }
     if (task.upgradeReq !== null) {
       return `累计强化成功 ${task.upgradeReq} 次 (${this.totalUpgrades}/${task.upgradeReq})`;
