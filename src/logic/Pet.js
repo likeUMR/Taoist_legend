@@ -56,5 +56,16 @@ export class Pet extends Entity {
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
     }
+
+    // 出击后执行边界限制
+    this.clampPosition();
+  }
+
+  /**
+   * 战宠重写边界限制：待机状态不限制
+   */
+  clampPosition() {
+    if (this.deployDelay > 0) return;
+    super.clampPosition();
   }
 }

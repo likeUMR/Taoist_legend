@@ -26,13 +26,13 @@ export class BonusUIRenderer {
       this.nextValEl.textContent = 'MAX';
       this.upgradeBtn.disabled = true;
       this.upgradeBtn.innerHTML = '已满级';
-      this.arrowEl.style.display = 'none';
+      this.arrowEl.style.visibility = 'hidden';
     } else {
       this.nextValEl.textContent = `+${info.nextPercent}%`;
       this.upgradeBtn.disabled = false;
       this.upgradeBtn.classList.add('ad-style'); // 强制蓝色广告样式
       this.upgradeBtn.innerHTML = '<i class="icon-video"></i> 升级';
-      this.arrowEl.style.display = 'inline-block';
+      this.arrowEl.style.visibility = 'visible';
     }
   }
 }

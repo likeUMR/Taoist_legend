@@ -38,7 +38,7 @@ export class LevelManager {
         }
       });
       // 初始隐藏
-      this.retryBtn.style.display = 'none';
+      this.retryBtn.style.visibility = 'hidden';
     }
   }
 
@@ -101,9 +101,9 @@ export class LevelManager {
     // 根据当前层级与最后失败层级的关系决定按钮显示
     if (this.retryBtn) {
       if (this.lastFailedLevel !== -1 && this.currentLevel < this.lastFailedLevel) {
-        this.retryBtn.style.display = 'block';
+        this.retryBtn.style.visibility = 'visible';
       } else {
-        this.retryBtn.style.display = 'none';
+        this.retryBtn.style.visibility = 'hidden';
       }
     }
 

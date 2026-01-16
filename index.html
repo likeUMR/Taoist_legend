@@ -5,20 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Taoist Legend Game</title>
     <link rel="stylesheet" href="/style.css" />
+    <link rel="manifest" href="/manifest.json" />
   </head>
   <body>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('SW registered:', reg);
+          }).catch(err => {
+            console.log('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
     <div id="game-container">
       <!-- 1. 顶部资源栏 -->
       <header class="top-bar">
         <div class="res-group">
           <div class="res-item"><i class="icon coin"></i><span id="gold-val">0</span></div>
-          <div class="res-item"><i class="icon ingot"></i>2057</div>
-          <div class="res-item"><i class="icon stone"></i>1.3万</div>
+          <div class="res-item"><i class="icon ingot"></i><span id="ingot-val">0</span></div>
+          <div class="res-item"><i class="icon stone"></i><span id="lingfu-val">0</span></div>
         </div>
-        <div class="menu-btn">
+        <div class="menu-btn" id="settings-btn">
           <div class="menu-icon"><span></span><span></span><span></span></div>
-          菜单
-          <div class="dot"></div>
+          设置
         </div>
       </header>
 
@@ -31,11 +42,16 @@
       <!-- 3. 核心战斗区 -->
       <main class="battle-scene">
         <div class="col-left">
-          <div class="entry-btn"><span>添加桌面</span></div>
-          <div class="entry-btn"><span>入口有奖</span></div>
-          <div class="entry-btn"><span>救救小美</span></div>
-          <div class="entry-btn"><span>仙友</span></div>
-          <div class="entry-btn hammer"><span>奖励已满</span></div>
+          <div class="entry-btn" id="desktop-entry-btn"><span>添加桌面</span></div>
+          <div class="entry-btn" id="online-reward-btn"><span>在线奖励</span></div>
+          <div class="entry-btn" id="story-btn"><span>守护沙城</span></div>
+          <div class="entry-btn"><span>神器</span></div>
+          <div class="entry-btn hammer" id="afk-reward-btn">
+            <div class="btn-content">
+              <span>挂机奖励</span>
+              <span class="afk-time-small">00:00</span>
+            </div>
+          </div>
         </div>
 
         <div class="col-center">
@@ -53,21 +69,21 @@
             金币加成
             <div class="level-badge-diamond"><span>0</span></div>
           </div>
-          <div class="buff-btn">补充能量</div>
-          <div class="buff-btn">自动攻击</div>
+          <div class="buff-btn" id="mana-refill-btn">补充法力</div>
+          <div class="buff-btn" id="auto-strike-btn">自动出击</div>
         </div>
       </main>
 
       <!-- 4. 角色状态与展示区 -->
       <section class="player-status">
-        <!-- 生命和能量合并为一行 -->
+        <!-- 生命和法力合并为一行 -->
         <div class="stat-row-combined">
           <div class="stat-item">
             <span class="mini-label">生命</span>
             <div class="progress-bg mini"><div class="fill green" style="width: 100%"></div><span class="val">1.5万/1.5万</span></div>
           </div>
           <div class="stat-item">
-            <span class="mini-label">能量</span>
+            <span class="mini-label">法力</span>
             <div class="progress-bg mini"><div class="fill blue" style="width: 100%"></div><span class="val">54.0/54.0</span></div>
           </div>
         </div>
@@ -113,14 +129,16 @@
 
         <!-- 技能框 (对称放置) -->
         <div class="skill-slots-bottom">
-          <div class="skill-slot"><span>技能1</span></div>
-          <div class="skill-slot"><span>技能2</span></div>
-          <div class="skill-slot"><span>技能3</span></div>
-          <div class="skill-slot"><span>技能4</span></div>
-          <div class="skill-slot"><span>技能5</span></div>
-          <div class="skill-slot"><span>技能6</span></div>
-          <div class="skill-slot"><span>技能7</span></div>
-          <div class="skill-slot"><span>技能8</span></div>
+          <!-- 第一行：主动技能 -->
+          <div class="skill-slot"><span>群体<br/>狂暴</span></div>
+          <div class="skill-slot"><span>毒素<br/>注入</span></div>
+          <div class="skill-slot"><span>天降<br/>甘霖</span></div>
+          <div class="skill-slot"><span>神圣<br/>战甲</span></div>
+          <!-- 第二行：被动技能 -->
+          <div class="skill-slot"><span>战争<br/>践踏</span></div>
+          <div class="skill-slot"><span>飓风<br/>之息</span></div>
+          <div class="skill-slot"><span>流星<br/>火雨</span></div>
+          <div class="skill-slot"><span>蚀骨<br/>冰刺</span></div>
         </div>
         
         <nav class="nav-bar">
@@ -132,7 +150,7 @@
             <div class="nav-icon">💫</div>
             <span>光环</span>
           </div>
-          <div class="nav-btn active">
+          <div class="nav-btn" id="adventure-nav-btn">
             <div class="nav-icon">⚔️</div>
             <span>冒险</span>
           </div>
@@ -230,6 +248,82 @@
         </div>
       </div>
 
+      <!-- 自动出击界面 -->
+      <div id="auto-strike-modal" class="modal-overlay hidden">
+        <div class="modal-content bonus-panel small auto-strike-panel">
+          <header class="modal-header">
+            <h2>自动出击</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="auto-strike-card">
+              <div class="auto-strike-info-box">
+                <div class="skill-icon-large">⚔️</div>
+                <p class="info-text">每次攻击都要点？快来解放双手！</p>
+              </div>
+              
+              <p class="highlight-hint">点击获取即可开启自动攻击</p>
+              <p class="duration-text">20min内有效</p>
+              
+              <div class="bonus-footer">
+                <button class="modal-action-btn close-action-btn">关闭</button>
+                <button class="modal-action-btn upgrade-action-btn">
+                  <i class="icon-video"></i> 获取
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 补充法力界面 -->
+      <div id="mana-modal" class="modal-overlay hidden">
+        <div class="modal-content bonus-panel small mana-panel">
+          <header class="modal-header">
+            <h2>补充能量</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="auto-strike-card">
+              <div class="auto-strike-info-box">
+                <div class="skill-icon-large">⚡</div>
+                <p class="info-text">又没有能量值了？来补充吧！</p>
+              </div>
+              
+              <p class="highlight-hint">点击获取即可补满能量</p>
+              
+              <div class="bonus-footer">
+                <button class="modal-action-btn close-action-btn">关闭</button>
+                <button class="modal-action-btn upgrade-action-btn">
+                  <i class="icon-video"></i> 获取
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 在线奖励界面 -->
+      <div id="online-modal" class="modal-overlay hidden">
+        <div class="modal-content online-panel">
+          <header class="modal-header">
+            <h2>在线时长领奖励</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="online-top-info">
+              <div class="online-icon-box">🎁</div>
+              <div class="online-bubble">每日累计在线一定时间可以领取大量福利！</div>
+            </div>
+            <div class="pet-scroll-view">
+              <div class="pet-list-content">
+                <!-- 内容由 OnlineRewardUIRenderer 填充 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 修炼界面 -->
       <div id="cultivation-modal" class="modal-overlay hidden">
         <div class="modal-content cultivation-panel">
@@ -241,6 +335,243 @@
             <div class="pet-scroll-view">
               <div class="pet-list-content">
                 <!-- 内容由 CultivationUIRenderer 填充 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 光环界面 -->
+      <div id="aura-modal" class="modal-overlay hidden">
+        <div class="modal-content aura-panel">
+          <header class="modal-header">
+            <h2>光环</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <!-- 内容由 AuraUIRenderer 填充 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 技能界面 -->
+      <div id="skill-modal" class="modal-overlay hidden">
+        <div class="modal-content skill-panel">
+          <header class="modal-header">
+            <h2>技能</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <!-- 内容由 SkillUIRenderer 填充 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 冒险界面 -->
+      <div id="adventure-modal" class="modal-overlay hidden">
+        <div class="modal-content adventure-panel">
+          <header class="modal-header">
+            <h2>试练</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="pet-scroll-view">
+              <div class="pet-list-content">
+                <!-- 第13层 -->
+                <div class="adventure-item">
+                  <div class="adventure-item-header">第13层</div>
+                  <div class="adventure-item-body">
+                    <div class="adventure-rewards">
+                      <div class="adv-reward-slot">💰<span>x200</span></div>
+                      <div class="adv-reward-slot">🏮<span>x600</span></div>
+                      <div class="adv-reward-slot">🧧<span>x1</span></div>
+                    </div>
+                    <button class="adv-challenge-btn">挑战</button>
+                  </div>
+                </div>
+                <!-- 第14层 -->
+                <div class="adventure-item">
+                  <div class="adventure-item-header">第14层</div>
+                  <div class="adventure-item-body">
+                    <div class="adventure-rewards">
+                      <div class="adv-reward-slot">💰<span>x200</span></div>
+                      <div class="adv-reward-slot">🏮<span>x600</span></div>
+                      <div class="adv-reward-slot">🧧<span>x1</span></div>
+                    </div>
+                    <button class="adv-challenge-btn">挑战</button>
+                  </div>
+                </div>
+                <!-- 第15层 -->
+                <div class="adventure-item">
+                  <div class="adventure-item-header">第15层</div>
+                  <div class="adventure-item-body">
+                    <div class="adventure-rewards">
+                      <div class="adv-reward-slot">💰<span>x200</span></div>
+                      <div class="adv-reward-slot">🏮<span>x600</span></div>
+                      <div class="adv-reward-slot">🧧<span>x1</span></div>
+                    </div>
+                    <button class="adv-challenge-btn">挑战</button>
+                  </div>
+                </div>
+                <!-- 第16层 -->
+                <div class="adventure-item">
+                  <div class="adventure-item-header">第16层</div>
+                  <div class="adventure-item-body">
+                    <div class="adventure-rewards">
+                      <div class="adv-reward-slot">💰<span>x200</span></div>
+                      <div class="adv-reward-slot">🏮<span>x600</span></div>
+                      <div class="adv-reward-slot">🧧<span>x1</span></div>
+                    </div>
+                    <button class="adv-challenge-btn">挑战</button>
+                  </div>
+                </div>
+                <!-- 第17层 -->
+                <div class="adventure-item">
+                  <div class="adventure-item-header">第17层</div>
+                  <div class="adventure-item-body">
+                    <div class="adventure-rewards">
+                      <div class="adv-reward-slot">💰<span>x200</span></div>
+                      <div class="adv-reward-slot">🏮<span>x600</span></div>
+                      <div class="adv-reward-slot">🧧<span>x1</span></div>
+                    </div>
+                    <button class="adv-challenge-btn">挑战</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 冒险内部分页标签 -->
+            <div class="adventure-tabs">
+              <button class="adv-tab active">试练</button>
+              <button class="adv-tab">每日<div class="dot red"></div></button>
+              <button class="adv-tab">讨伐</button>
+              <button class="adv-tab">秘境</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 添加桌面奖励界面 -->
+      <div id="desktop-modal" class="modal-overlay hidden">
+        <div class="modal-content desktop-panel">
+          <button class="close-btn">&times;</button>
+          
+          <div class="ribbon-header">限定福利</div>
+          
+          <div class="modal-body">
+            <h3 class="desktop-subtitle">添加桌面领奖励</h3>
+            
+            <div class="steps-box">
+              <p class="steps-title">领取步骤：</p>
+              <ul class="steps-list">
+                <li>1.点击“添加桌面”按钮</li>
+                <li>2.添加到主屏幕</li>
+              </ul>
+              
+              <div class="reward-center">
+                <div class="chest-img">🎁</div> <!-- Temporary emoji, can be styled or replaced -->
+                <div class="reward-badge">
+                  <i class="icon ingot"></i>
+                  <span>500</span>
+                </div>
+              </div>
+            </div>
+            
+            <button class="desktop-claim-btn">领取奖励</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设置界面 -->
+      <div id="settings-modal" class="modal-overlay hidden">
+        ...
+      </div>
+
+      <!-- 主线剧情/守护沙城界面 -->
+      <div id="story-modal" class="modal-overlay hidden">
+        <div class="modal-content story-panel">
+          <div class="story-paper">
+            <h2 class="story-title">主线剧情 · 二</h2>
+            
+            <div class="story-image-placeholder">
+              <!-- 这里是插画占位 -->
+              <div class="character-illustration"></div>
+            </div>
+
+            <div class="story-content">
+              <p>幕后黑手终于浮出水面，可我还是太弱了，</p>
+              <p>除非在<span class="highlight-red">71:59:58</span>后练出<span class="highlight-red">玲珑剑(No.20)</span>才能救回小美</p>
+            </div>
+
+            <button class="story-confirm-btn">确认</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 挂机奖励界面 -->
+      <div id="afk-modal" class="modal-overlay hidden">
+        <div class="modal-content afk-panel">
+          <header class="modal-header">
+            <h2>挂机奖励</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="afk-container">
+              <!-- 当前等级 -->
+              <div class="afk-level-info">
+                <div class="afk-lv-badge">当前等级 : <span class="highlight">LV.15</span></div>
+                <p class="afk-sub-text">根据挂机时长获得相应奖励</p>
+              </div>
+
+              <!-- 关卡选择 -->
+              <div class="afk-stage-selector">
+                <button class="arrow-btn left"></button>
+                <div class="stage-items">
+                  <div class="stage-item">140关</div>
+                  <div class="stage-item active">150关</div>
+                  <div class="stage-item">160关</div>
+                </div>
+                <button class="arrow-btn right"></button>
+              </div>
+
+              <!-- 金币效率 -->
+              <div class="afk-efficiency-card">
+                <div class="efficiency-title">金币效率</div>
+                <div class="efficiency-value">
+                  <i class="icon-coin-large"></i>
+                  <span class="value-text">116.6万/h</span>
+                </div>
+              </div>
+
+              <!-- 额外奖励 -->
+              <div class="afk-extra-rewards">
+                <div class="extra-title">额外获得奖励</div>
+                <div class="rewards-row">
+                  <div class="reward-item">
+                    <div class="reward-icon coin"></div>
+                    <div class="reward-amount">0</div>
+                  </div>
+                  <div class="reward-item">
+                    <div class="reward-icon ingot"></div>
+                    <div class="reward-amount">665</div>
+                  </div>
+                  <div class="reward-item">
+                    <div class="reward-icon stone"></div>
+                    <div class="reward-amount">704</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 挂机时间 -->
+              <div class="afk-time-display">
+                挂机时间 : <span class="time-val">05:30:00</span>
+              </div>
+
+              <!-- 按钮组 -->
+              <div class="afk-actions">
+                <button class="afk-btn claim-btn">领取</button>
+                <button class="afk-btn double-claim-btn">
+                  <i class="icon-video"></i> 双倍领取
+                </button>
               </div>
             </div>
           </div>

@@ -4,8 +4,9 @@ import { PET_CONFIGS, getUpgradeInfo } from '../data/petConfigs.js';
  * 战宠集合管理类：管理玩家拥有的战宠状态及其数值计算
  */
 export class PetCollection {
-  constructor(cultivationManager = null) {
+  constructor(cultivationManager = null, auraManager = null) {
     this.cultivationManager = cultivationManager;
+    this.auraManager = auraManager;
     // 初始状态：只解锁第 1 个战宠
     this.ownedPets = [
       { id: 1, level: 0 } // 注意：从等级 0 开始
@@ -102,12 +103,17 @@ export class PetCollection {
    * 获取实时战斗属性
    */
   getBattleData() {
+    // 获取光环加成 (数值格式如 1.15 代表 15% 增益)
+    const dmgMult = this.auraManager ? this.auraManager.getModifier('增伤光环') : 1.0;
+    const hpMult = this.auraManager ? this.auraManager.getModifier('加血光环') : 1.0;
+    const speedMult = this.auraManager ? this.auraManager.getModifier('攻速光环') : 1.0;
+
     return this.ownedPets.map(state => {
       const config = PET_CONFIGS.find(c => c.id === state.id);
       const upgradeCfg = this.upgradeConfigs.get(state.level) || { atkMult: 1, hpMult: 1 };
       
-      const finalAtk = config.baseAtk * upgradeCfg.atkMult;
-      const finalHp = config.baseHp * upgradeCfg.hpMult;
+      const finalAtk = config.baseAtk * upgradeCfg.atkMult * dmgMult;
+      const finalHp = config.baseHp * upgradeCfg.hpMult * hpMult;
 
       return {
         id: config.id,
@@ -115,7 +121,7 @@ export class PetCollection {
         atk: finalAtk,
         hp: finalHp,
         maxHp: finalHp,
-        atkSpeed: 0.8
+        atkSpeed: 0.8 / speedMult // 攻速光环增加百分比，意味着攻击间隔缩短
       };
     });
   }

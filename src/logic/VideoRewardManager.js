@@ -5,12 +5,16 @@ export class VideoRewardManager {
   constructor() {
     this.limits = {
       'pet': 10,
-      'cultivation': 5
+      'cultivation': 5,
+      'aura': 5,
+      'skill': 10
     };
     
     this.counts = {
       'pet': 0,
-      'cultivation': 0
+      'cultivation': 0,
+      'aura': 0,
+      'skill': 0
     };
     
     this.lastResetDate = '';
@@ -22,7 +26,14 @@ export class VideoRewardManager {
     const saved = localStorage.getItem('taoist_video_data');
     if (saved) {
       const data = JSON.parse(saved);
-      this.counts = data.counts || this.counts;
+      // 合并旧数据，确保新增加的分类 (如 aura) 即使在旧存档中不存在也能初始化为 0
+      if (data.counts) {
+        for (const key in this.counts) {
+          if (data.counts[key] !== undefined) {
+            this.counts[key] = data.counts[key];
+          }
+        }
+      }
       this.lastResetDate = data.lastResetDate || '';
     } else {
       // 尝试兼容旧的 ad_data 键名
@@ -45,7 +56,7 @@ export class VideoRewardManager {
   checkDailyReset() {
     const today = new Date().toLocaleDateString();
     if (this.lastResetDate !== today) {
-      this.counts = { 'pet': 0, 'cultivation': 0 };
+      this.counts = { 'pet': 0, 'cultivation': 0, 'aura': 0, 'skill': 0 };
       this.lastResetDate = today;
       this.save();
     }

@@ -25,8 +25,15 @@ export class Entity {
   clampPosition() {
     if (!this.worldBounds) return;
     const margin = 20; 
-    this.x = Math.max(margin, Math.min(this.worldBounds.width - margin, this.x));
-    this.y = Math.max(margin, Math.min(this.worldBounds.height - margin, this.y));
+
+    // 支持两种边界格式：一种是宽高矩形(从0开始)，一种是明确的 min/max 范围
+    const minX = this.worldBounds.minX !== undefined ? this.worldBounds.minX + margin : margin;
+    const maxX = this.worldBounds.maxX !== undefined ? this.worldBounds.maxX - margin : this.worldBounds.width - margin;
+    const minY = this.worldBounds.minY !== undefined ? this.worldBounds.minY + margin : margin;
+    const maxY = this.worldBounds.maxY !== undefined ? this.worldBounds.maxY - margin : this.worldBounds.height - margin;
+
+    this.x = Math.max(minX, Math.min(maxX, this.x));
+    this.y = Math.max(minY, Math.min(maxY, this.y));
   }
 
   update(dt, engine) {

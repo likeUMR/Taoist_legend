@@ -4,6 +4,8 @@
 export class CurrencyManager {
   constructor() {
     this.gold = 0;
+    this.ingot = 0;   // 元宝
+    this.lingfu = 0;  // 灵符
     
     // 神兽精华相关
     this.essence = 15;
@@ -12,6 +14,8 @@ export class CurrencyManager {
     this.lastRecoveryTime = Date.now();
     
     this.onUpdate = null; // 金币 UI 更新回调
+    this.onIngotUpdate = null; // 元宝 UI 更新回调
+    this.onLingfuUpdate = null; // 灵符 UI 更新回调
     this.onEssenceUpdate = null; // 精华 UI 更新回调
     this._lastUIRemain = -1; // 上次发送给 UI 的剩余秒数，用于性能优化
     this._lastEssence = 15; // 上次发送给 UI 的精华数值，用于性能优化
@@ -171,5 +175,63 @@ export class CurrencyManager {
 
   getGold() {
     return this.gold;
+  }
+
+  /**
+   * 增加元宝
+   */
+  addIngot(amount) {
+    if (amount < 0) return;
+    this.ingot += amount;
+    if (this.onIngotUpdate) {
+      this.onIngotUpdate(this.ingot);
+    }
+  }
+
+  /**
+   * 消耗元宝
+   */
+  spendIngot(amount) {
+    if (this.ingot >= amount) {
+      this.ingot -= amount;
+      if (this.onIngotUpdate) {
+        this.onIngotUpdate(this.ingot);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getIngot() {
+    return this.ingot;
+  }
+
+  /**
+   * 增加灵符
+   */
+  addLingfu(amount) {
+    if (amount < 0) return;
+    this.lingfu += amount;
+    if (this.onLingfuUpdate) {
+      this.onLingfuUpdate(this.lingfu);
+    }
+  }
+
+  /**
+   * 消耗灵符
+   */
+  spendLingfu(amount) {
+    if (this.lingfu >= amount) {
+      this.lingfu -= amount;
+      if (this.onLingfuUpdate) {
+        this.onLingfuUpdate(this.lingfu);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getLingfu() {
+    return this.lingfu;
   }
 }

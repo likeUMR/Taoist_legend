@@ -139,6 +139,20 @@ body {
   box-shadow: 2px 2px 0 #000;
 }
 
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.afk-time-small {
+  font-size: 10px;
+  color: #f97316;
+  font-weight: bold;
+}
+
 .buff-btn {
   width: 65px; /* 54 * 1.2 ≈ 65 */
   height: 65px;
@@ -178,7 +192,12 @@ body {
 }
 
 .col-center { position: relative; }
-.battle-wrap { position: relative; height: 100%; width: 100%; }
+.battle-wrap { 
+  position: relative; 
+  height: 100%; 
+  width: 100%; 
+  overflow: visible; /* 允许战宠在战斗区域外显示（如出生阵法区） */
+}
 
 .stickman {
   width: 40px;
@@ -286,7 +305,9 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 9px;
+  font-size: 11px;
+  line-height: 1.1; /* 增加行高，使换行更紧凑 */
+  text-align: center;
 }
 
 .hero-center-display {
@@ -641,7 +662,7 @@ body {
   margin-top: 100px;
 }
 
-/* --- 战宠面板内容样式 --- */
+/* 战宠面板内容样式 */
 .pet-stats-header {
   background: #e5e7eb;
   padding: 10px;
@@ -650,6 +671,21 @@ body {
   font-size: 13px;
   font-weight: bold;
   border-bottom: 2px solid #000;
+}
+
+/* 在线奖励项特殊处理，使其图标更大更显眼 */
+.online-reward-item .pet-icon-wrap .icon {
+  width: 36px;
+  height: 36px;
+  box-shadow: 0 0 0 2px #000;
+}
+
+.online-reward-item .pet-level-badge {
+  top: auto;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 /* --- 精华底部条 --- */
@@ -982,6 +1018,475 @@ body {
   transform: translateY(3px);
 }
 
+/* --- 自动出击面板特定样式 --- */
+.auto-strike-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auto-strike-info-box {
+  width: 100%;
+  background: #9ca3af;
+  border: 3px solid #000;
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.skill-icon-large {
+  width: 80px;
+  height: 80px;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+}
+
+.auto-strike-info-box .info-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+  text-align: center;
+}
+
+.highlight-hint {
+  color: #ef4444;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.duration-text {
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+}
+
+.auto-strike-panel .bonus-footer,
+.mana-panel .bonus-footer {
+  width: 100%;
+  padding: 0 10px;
+}
+
+/* --- 在线奖励面板特定样式 --- */
+.online-panel {
+  height: 800px;
+  background: var(--game-white) !important;
+}
+
+.online-top-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background: #fff;
+  border-bottom: 2px solid #000;
+}
+
+.online-icon-box {
+  width: 80px;
+  height: 80px;
+  background: #f3f4f6;
+  border: 3px solid #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50px;
+  flex-shrink: 0;
+}
+
+.online-bubble {
+  position: relative;
+  background: #fff;
+  border: 3px solid #000;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.online-bubble::before {
+  content: '';
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 8px 15px 8px 0;
+  border-style: solid;
+  border-color: transparent #000 transparent transparent;
+}
+
+.online-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+}
+
+.reward-icon-small {
+  width: 65px;
+  height: 65px;
+  background: #f3f4f6;
+  border: 2px solid #000;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.reward-icon-small .count {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.8);
+  border-top: 1px solid #000;
+}
+
+.reward-info {
+  flex: 1;
+}
+
+.reward-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.reward-title .highlight {
+  color: #f97316;
+  font-size: 22px;
+}
+
+.reward-progress-bar {
+  height: 20px;
+  background: #4b5563;
+  border: 2px solid #000;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.reward-progress-bar .fill.green {
+  height: 100%;
+  background: #4ade80;
+}
+
+.reward-progress-bar .val {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 0;
+  left: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.reward-action {
+  width: 90px;
+  display: flex;
+  justify-content: center;
+}
+
+.claim-btn-small {
+  background: var(--yellow);
+  border: 2px solid #000;
+  border-bottom-width: 4px;
+  border-radius: 6px;
+  padding: 8px 15px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+}
+
+.claim-btn-small.disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+  border-bottom-width: 2px;
+}
+
+.claimed-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #111;
+}
+
+/* --- 冒险面板特定样式 --- */
+.adventure-panel {
+  height: 800px;
+}
+
+.adventure-panel .modal-body {
+  position: relative;
+  padding-bottom: 70px; /* 为底部标签留出空间 */
+}
+
+.adventure-item {
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  margin-bottom: 12px;
+}
+
+.adventure-item-header {
+  font-size: 18px;
+  font-weight: bold;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.adventure-item-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adventure-rewards {
+  display: flex;
+  gap: 10px;
+}
+
+.adv-reward-slot {
+  width: 50px;
+  height: 50px;
+  background: #f3f4f6;
+  border: 2px solid #000;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  position: relative;
+}
+
+.adv-reward-slot span {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.8);
+  border-top: 1px solid #000;
+}
+
+.adv-challenge-btn {
+  background: var(--yellow);
+  border: 3px solid #000;
+  border-bottom-width: 6px;
+  border-radius: 8px;
+  padding: 10px 25px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.adv-challenge-btn:active {
+  border-bottom-width: 3px;
+  transform: translateY(3px);
+}
+
+.adventure-tabs {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  background: #fff;
+  border-top: 3px solid #000;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 0 0 8px 8px;
+}
+
+.adv-tab {
+  flex: 1;
+  height: 45px;
+  margin: 0 4px;
+  background: #f3f4f6;
+  border: 2px solid #000;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adv-tab.active {
+  background: var(--yellow);
+  transform: scale(1.05);
+}
+
+.adv-tab .dot.red {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  background: var(--red);
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+/* --- 设置面板特定样式 --- */
+.settings-panel {
+  width: 85% !important;
+  max-width: 400px;
+}
+
+.settings-container {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  width: 100%;
+}
+
+.setting-label {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  width: 80px;
+  text-align: center;
+}
+
+.setting-label-small {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+}
+
+.custom-checkbox {
+  width: 45px;
+  height: 45px;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 6px;
+  position: relative;
+  cursor: pointer;
+}
+
+.custom-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  color: #4ade80; /* 亮绿色 */
+  font-weight: bold;
+  -webkit-text-stroke: 2px #000;
+}
+
+.settings-divider {
+  width: 100%;
+  height: 2px;
+  background: #000;
+  position: relative;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-divider::before,
+.settings-divider::after {
+  content: '◆';
+  position: absolute;
+  background: var(--game-white);
+  padding: 0 5px;
+  font-size: 14px;
+}
+
+.settings-divider::before { left: 20%; }
+.settings-divider::after { right: 20%; }
+
+.divider-text {
+  background: var(--game-white);
+  padding: 0 15px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.setting-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  width: 100%;
+}
+
+.setting-grid .setting-row {
+  width: auto;
+  gap: 10px;
+}
+
+.setting-grid .custom-checkbox {
+  width: 35px;
+  height: 35px;
+}
+
+.setting-grid .custom-checkbox.checked::after {
+  font-size: 28px;
+}
+
+.version-text {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #111;
+}
+
 .modal-action-btn[disabled] {
   background: #9ca3af !important;
   opacity: 0.7;
@@ -1062,6 +1567,424 @@ body {
   flex-shrink: 0;
 }
 
+/* --- 挂机奖励面板特定样式 --- */
+.afk-panel {
+  height: auto;
+  max-height: 85%;
+}
+
+.afk-container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.afk-level-info {
+  text-align: center;
+  background: #fff;
+  border: 2px solid #000;
+  padding: 10px 30px;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.afk-lv-badge {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.afk-lv-badge .highlight {
+  color: #f97316;
+}
+
+.afk-sub-text {
+  margin: 5px 0 0 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.afk-stage-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.afk-stage-selector .arrow-btn {
+  width: 30px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.afk-stage-selector .arrow-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid #000;
+  border-right: 3px solid #000;
+}
+
+.afk-stage-selector .arrow-btn.left::after {
+  transform: translate(-30%, -50%) rotate(-135deg);
+}
+
+.afk-stage-selector .arrow-btn.right::after {
+  transform: translate(-70%, -50%) rotate(45deg);
+}
+
+.stage-items {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.stage-item {
+  flex: 1;
+  height: 50px;
+  background: #f1f5f9;
+  border: 2px solid #000;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+/* 已达到/解锁关卡：淡灰色 */
+.stage-item.reached {
+  background: #f8fafc;
+  color: #475569;
+}
+
+/* 未达到关卡：深灰色 */
+.stage-item.locked {
+  background: #cbd5e1;
+  color: #94a3b8;
+}
+
+/* 选中的已达到关卡：正常橙色 */
+.stage-item.active.reached {
+  background: #fdba74;
+  color: #000;
+  border-width: 3px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* 选中的未达到关卡：暗橙色（橙色+灰色叠加感） */
+.stage-item.active.locked {
+  background: #c2a88a; /* 橙色与灰色的调和色 */
+  color: #6b7280;
+  border-width: 3px;
+  opacity: 0.9;
+}
+
+.afk-efficiency-card {
+  width: 100%;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+}
+
+.efficiency-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+  width: 80%;
+  text-align: center;
+}
+
+.efficiency-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-coin-large {
+  width: 30px;
+  height: 30px;
+  background: #fbbf24;
+  border: 2px solid #000;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.icon-coin-large::after {
+  content: '¥';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.value-text {
+  font-size: 28px;
+  font-weight: bold;
+  color: #fbbf24;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.afk-extra-rewards {
+  width: 100%;
+  background: #cbd5e1; /* 灰色背景 */
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.extra-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+}
+
+.rewards-row {
+  display: flex;
+  gap: 20px;
+}
+
+.reward-item {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reward-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reward-icon.coin {
+  background: var(--yellow);
+}
+
+.reward-icon.coin::before {
+  content: '¥';
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.reward-icon.ingot {
+  background: #fbbf24;
+}
+
+.reward-icon.ingot::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+}
+
+.reward-icon.stone {
+  background: #f59e0b;
+}
+
+.reward-icon.stone::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background: rgba(255,255,255,0.2);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.reward-amount {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: #fff;
+  border: 1px solid #000;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 3px;
+}
+
+.afk-time-display {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.afk-time-display .time-val {
+  color: #f97316;
+}
+
+.afk-actions {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+}
+
+.afk-btn {
+  flex: 1;
+  height: 55px;
+  border: 3px solid #000;
+  border-bottom-width: 6px;
+  border-radius: 8px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.claim-btn {
+  background: var(--yellow);
+}
+
+.double-claim-btn {
+  background: var(--blue);
+  color: #fff;
+}
+
+.afk-btn:active {
+  border-bottom-width: 3px;
+  transform: translateY(3px);
+}
+
+/* --- 剧情面板样式 --- */
+.story-panel {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 90% !important;
+  height: auto !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.story-paper {
+  width: 100%;
+  background: #fff;
+  background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
+  background-size: 100% 30px; /* 笔记本横线效果 */
+  border: 2px solid #000;
+  border-radius: 4px;
+  padding: 40px 20px 20px;
+  position: relative;
+  box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+}
+
+/* 纸张边缘撕裂感 (简单模拟) */
+.story-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 15px;
+  background: #fff;
+  background-image: radial-gradient(circle at 10px -5px, transparent 12px, #000 13px, transparent 14px);
+  background-size: 20px 20px;
+  z-index: 2;
+}
+
+.story-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  font-family: "Kaiti", "STKaiti", serif;
+  position: relative;
+  z-index: 1;
+}
+
+.story-image-placeholder {
+  width: 100%;
+  height: 400px;
+  background: #f3f4f6;
+  border: 2px solid #000;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.character-illustration {
+  width: 90%;
+  height: 90%;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23ddd"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="10">人物插画占位</text></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.story-content {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.highlight-red {
+  color: #ef4444;
+}
+
+.story-confirm-btn {
+  display: block;
+  margin: 0 auto;
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 4px;
+  padding: 10px 40px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.story-confirm-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+
 /* --- 强化反馈动画 --- */
 .feedback-toast {
   position: absolute;
@@ -1096,3 +2019,168 @@ body {
   80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100% { transform: translate(-50%, -80%) scale(1); opacity: 0; }
 }
+
+/* --- 添加桌面奖励面板特定样式 --- */
+.desktop-panel {
+  width: 90% !important;
+  max-width: 450px;
+  height: auto !important;
+  min-height: 520px;
+  background: #fff !important;
+  border: 4px solid #000;
+  border-radius: 12px;
+  overflow: visible !important;
+  padding: 60px 0 30px 0;
+  position: relative;
+  box-shadow: 0 10px 0 rgba(0,0,0,0.2);
+}
+
+.desktop-panel .close-btn {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  width: 48px;
+  height: 48px;
+  background: #ef4444;
+  color: #fff;
+  border: 4px solid #fff;
+  border-radius: 12px;
+  font-size: 32px;
+  font-weight: bold;
+  z-index: 1010;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.desktop-panel .ribbon-header {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444;
+  color: #fff;
+  padding: 12px 50px;
+  font-size: 32px;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+  z-index: 1005;
+  border: 3px solid #000;
+}
+
+.desktop-panel .ribbon-header::before,
+.desktop-panel .ribbon-header::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  width: 30px;
+  height: 100%;
+  background: #b91c1c;
+  z-index: -1;
+  border: 3px solid #000;
+}
+
+.desktop-panel .ribbon-header::before {
+  left: -25px;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.desktop-panel .ribbon-header::after {
+  right: -25px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.desktop-subtitle {
+  text-align: center;
+  color: #f97316;
+  font-size: 26px;
+  margin: 10px 0 25px 0;
+  font-weight: bold;
+}
+
+.steps-box {
+  background: #9ca3af;
+  border: 3px solid #000;
+  border-radius: 8px;
+  margin: 0 25px 20px;
+  padding: 20px;
+  position: relative;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.steps-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #000;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.reward-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.chest-img {
+  font-size: 100px;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 5px 0 rgba(0,0,0,0.1));
+}
+
+.reward-badge {
+  background: #000;
+  color: #fff;
+  padding: 6px 25px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.reward-badge .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.desktop-claim-btn {
+  display: block;
+  width: 70%;
+  margin: 10px auto 0;
+  background: #f97316;
+  color: #fff;
+  border: 3px solid #000;
+  border-bottom: 8px solid #000;
+  border-radius: 10px;
+  padding: 15px 0;
+  font-size: 26px;
+  font-weight: bold;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+}
+
+.desktop-claim-btn:active {
+  border-bottom-width: 3px;
+  transform: translateY(5px);
+}
+
