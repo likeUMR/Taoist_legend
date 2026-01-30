@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 在线奖励管理类：负责累计在线时长、维护领取状态、跨天重置等
  */
@@ -110,11 +112,11 @@ export class OnlineRewardManager {
       claimedIndices: this.claimedIndices,
       lastUpdateDate: this.lastUpdateDate
     };
-    localStorage.setItem('taoist_online_reward_data', JSON.stringify(data));
+    GameConfig.setStorageItem('taoist_online_reward_data', JSON.stringify(data));
   }
 
   load() {
-    const saved = localStorage.getItem('taoist_online_reward_data');
+    const saved = GameConfig.getStorageItem('taoist_online_reward_data');
     if (saved) {
       try {
         const data = JSON.parse(saved);

@@ -82,7 +82,7 @@ export class PetUIRenderer {
               <div class="pet-icon-placeholder">🐺</div>
             </div>
             <div class="pet-info">
-              <h3>${pet.name} <span class="plus-text">+${pet.level}</span></h3>
+              <h3>${pet.name} <span class="class-text">CL.${pet.classLevel}</span> <span class="plus-text">+${pet.displayLevel}</span></h3>
               <div class="attr-row">
                 攻击力 ${formatNumber(pet.currentAtk)} ${pet.nextAtk ? `<span class="arrow">→</span> <span class="up">${formatNumber(pet.nextAtk)}</span>` : ''}
               </div>

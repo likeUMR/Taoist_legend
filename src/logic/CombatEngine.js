@@ -63,6 +63,48 @@ export class CombatEngine {
     }
   }
 
+  /**
+   * 搜索半径内的实体
+   */
+  getEntitiesInRadius(centerX, centerY, radius, sideFilter = null) {
+    return this.entities.filter(e => {
+      if (e.isDead) return false;
+      if (sideFilter && e.side !== sideFilter) return false;
+      const dx = e.x - centerX;
+      const dy = e.y - centerY;
+      return dx * dx + dy * dy <= radius * radius;
+    });
+  }
+
+  /**
+   * 搜索扇形区域内的实体
+   * @param {number} centerX 中心点X
+   * @param {number} centerY 中心点Y
+   * @param {number} radius 扇形半径
+   * @param {number} direction 扇形中轴线弧度
+   * @param {number} angle 扇形夹角 (弧度)
+   */
+  getEntitiesInSector(centerX, centerY, radius, direction, angle, sideFilter = null) {
+    const halfAngle = angle / 2;
+    return this.entities.filter(e => {
+      if (e.isDead) return false;
+      if (sideFilter && e.side !== sideFilter) return false;
+      
+      const dx = e.x - centerX;
+      const dy = e.y - centerY;
+      const distSq = dx * dx + dy * dy;
+      if (distSq > radius * radius) return false;
+
+      const entityAngle = Math.atan2(dy, dx);
+      let diff = entityAngle - direction;
+      // 角度归一化到 [-PI, PI]
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+
+      return Math.abs(diff) <= halfAngle;
+    });
+  }
+
   update() {
     const now = performance.now();
     const rawDt = (now - this.lastTime) / 1000; // 真实流逝秒数

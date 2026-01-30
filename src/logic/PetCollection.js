@@ -1,4 +1,5 @@
 import { PET_CONFIGS, getUpgradeInfo } from '../data/petConfigs.js';
+import { GameConfig } from './GameConfig.js';
 
 /**
  * 战宠集合管理类：管理玩家拥有的战宠状态及其数值计算
@@ -12,6 +13,19 @@ export class PetCollection {
       { id: 1, level: 0 } // 注意：从等级 0 开始
     ];
     this.upgradeConfigs = new Map(); // level -> config
+
+    this.load();
+  }
+
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_pet_data');
+    if (saved) {
+      this.ownedPets = JSON.parse(saved);
+    }
+  }
+
+  save() {
+    GameConfig.setStorageItem('taoist_pet_data', JSON.stringify(this.ownedPets));
   }
 
   /**
@@ -61,6 +75,19 @@ export class PetCollection {
         const currentLevel = state.level;
         const nextLevel = currentLevel + 1;
         
+        // 计算阶位 (CL) 和 阶内强化等级 (+N)
+        let classLevel = 0;
+        let displayLevel = 0;
+        for (let i = 1; i <= currentLevel; i++) {
+          const cfg = this.upgradeConfigs.get(i);
+          if (cfg && cfg.isBreakthrough) {
+            classLevel++;
+            displayLevel = 0;
+          } else {
+            displayLevel++;
+          }
+        }
+
         const currentCfg = this.upgradeConfigs.get(currentLevel) || { atkMult: 1, hpMult: 1 };
         const nextCfg = this.upgradeConfigs.get(nextLevel);
         
@@ -79,6 +106,8 @@ export class PetCollection {
           ...config,
           unlocked: true,
           level: currentLevel,
+          classLevel: classLevel,
+          displayLevel: displayLevel,
           currentAtk: config.baseAtk * currentCfg.atkMult,
           currentHp: config.baseHp * currentCfg.hpMult,
           nextAtk: nextCfg ? config.baseAtk * nextCfg.atkMult : null,
@@ -205,6 +234,7 @@ export class PetCollection {
       if (this.onUpgradeSuccess && !nextCfg.isBreakthrough) {
         this.onUpgradeSuccess();
       }
+      this.save();
       return { success: true, newLevel: petState.level, doubleUpgraded };
     } else {
       return { success: false, reason: "强化失败" };
@@ -223,6 +253,7 @@ export class PetCollection {
     }
 
     this.ownedPets.push({ id: nextConfig.id, level: 0 }); // 初始等级为 0
+    this.save();
     return { success: true, petId: nextConfig.id };
   }
 }

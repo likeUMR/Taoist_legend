@@ -14,6 +14,9 @@ export class Enemy extends Entity {
   update(dt, engine) {
     if (this.isDead) return;
 
+    // 更新 Buff (处理中毒等)
+    this.updateBuffs(dt);
+
     this.moveTimer -= dt;
 
     if (this.moveTimer <= 0) {
@@ -40,8 +43,9 @@ export class Enemy extends Entity {
       const dist = Math.sqrt(dx * dx + dy * dy);
       
       if (dist > 2) {
-        this.x += (dx / dist) * this.speed * dt;
-        this.y += (dy / dist) * this.speed * dt;
+        const finalSpeed = this.getFinalSpeed();
+        this.x += (dx / dist) * finalSpeed * dt;
+        this.y += (dy / dist) * finalSpeed * dt;
       }
     }
 

@@ -147,10 +147,16 @@ body {
   gap: 2px;
 }
 
-.afk-time-small {
+.afk-time-small,
+.auto-strike-time-small,
+.story-time-small {
   font-size: 10px;
   color: #f97316;
   font-weight: bold;
+}
+
+.text-red {
+  color: #ef4444 !important;
 }
 
 .buff-btn {
@@ -306,8 +312,292 @@ body {
   justify-content: center;
   font-weight: bold;
   font-size: 11px;
-  line-height: 1.1; /* 增加行高，使换行更紧凑 */
+  line-height: 1.1;
+  color: #000;
   text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+/* 技能可用状态：背景变为金色（参考任务可领取样式），无发光 */
+.skill-slot.usable {
+  background: var(--yellow);
+  border-color: #000;
+  color: #000;
+}
+
+/* 冷却遮罩 */
+.skill-slot .cd-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: rgba(0, 0, 0, 0.6);
+  transition: height 0.1s linear;
+  pointer-events: none;
+}
+
+/* --- 被动技能特效 --- */
+
+/* 瞬时特效容器 */
+.vfx-instance {
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+  transform: translate(-50%, -50%);
+}
+
+/* 战争践踏: 圆形扩散波 (棕色大地系) */
+.vfx-war-stomp {
+  border: 4px solid rgba(139, 69, 19, 0.9); /* SaddleBrown */
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(139, 69, 19, 0.5), inset 0 0 10px rgba(139, 69, 19, 0.5);
+  animation: vfx-stomp-anim 0.5s ease-out forwards;
+  background: radial-gradient(circle, rgba(160, 82, 45, 0.6) 0%, transparent 80%); /* Sienna */
+}
+
+@keyframes vfx-stomp-anim {
+  from { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* 飓风之息: 旋转风球 */
+.projectile-hurricane {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(173, 216, 230, 0.9) 0%, transparent 80%);
+  border-radius: 50%;
+  z-index: 90;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(173, 216, 230, 0.5);
+}
+
+.projectile-hurricane::before {
+  content: '🌀';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  animation: vfx-rotate 0.4s linear infinite;
+  text-shadow: 0 0 5px #fff;
+}
+
+@keyframes vfx-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 流星火雨: 陨石与爆炸 */
+.vfx-meteor {
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 69, 0, 0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: vfx-meteor-anim 1.0s ease-in forwards;
+  opacity: 0;
+  box-shadow: 0 0 20px rgba(255, 69, 0, 0.6);
+}
+
+.vfx-meteor::before {
+  content: '☄️';
+  position: absolute;
+  top: -300px;
+  left: 50%;
+  font-size: 40px;
+  transform: translateX(-50%) rotate(135deg);
+  animation: vfx-meteor-drop 0.6s ease-in forwards;
+  text-shadow: 0 0 10px #ff4500;
+}
+
+@keyframes vfx-meteor-drop {
+  from { top: -400px; opacity: 0; }
+  30% { opacity: 1; }
+  to { top: 0px; opacity: 1; }
+}
+
+@keyframes vfx-meteor-anim {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* 蚀骨冰刺: 扇形 (居中于 90度/右侧，以便配合 rotate 逻辑) */
+.vfx-ice-spike {
+  width: 160px;
+  height: 160px;
+  background: conic-gradient(from 60deg, rgba(0, 191, 255, 0.8) 0deg, rgba(0, 191, 255, 0.8) 60deg, transparent 60deg);
+  mask-image: radial-gradient(circle, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, black 40%, transparent 100%);
+  animation: vfx-ice-anim 0.5s ease-out forwards;
+  filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.6));
+}
+
+@keyframes vfx-ice-anim {
+  from { scale: 0.2; opacity: 0; }
+  20% { opacity: 1; }
+  to { scale: 1.2; opacity: 0; }
+}
+
+/* 战宠触发技能时的闪光效果 (保持原样，用于实体) */
+.vfx-skill-trigger-flash {
+  animation: vfx-flash-gold 0.3s ease-out;
+}
+
+@keyframes vfx-flash-gold {
+  0% { filter: brightness(1) drop-shadow(0 0 0 gold); }
+  50% { filter: brightness(2) drop-shadow(0 0 20px gold); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 gold); }
+}
+
+/* 主界面技能图标触发时的背景闪烁 (仅背景变金，无发光) */
+.vfx-ui-skill-flash {
+  animation: vfx-ui-flash-gold 0.3s ease-out;
+}
+
+@keyframes vfx-ui-flash-gold {
+  0% { background-color: #cbd5e1; }
+  50% { background-color: var(--yellow); }
+  100% { background-color: #cbd5e1; }
+}
+
+/* 战宠/敌人 Buff 特效 */
+.combat-entity .entity-vfx-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* 狂暴粒子层 */
+.combat-entity.vfx-frenzy .entity-vfx-layer::before,
+.combat-entity.vfx-frenzy .entity-vfx-layer::after {
+  content: '▲';
+  position: absolute;
+  bottom: 10px;
+  color: #ff4500;
+  font-size: 8px;
+  text-shadow: 0 0 5px #ff0000;
+  opacity: 0;
+  animation: vfx-frenzy-particles 0.6s infinite linear;
+}
+
+/* 两个伪元素交替位置和延迟，实现频率翻倍和随机感 */
+.combat-entity.vfx-frenzy .entity-vfx-layer::before {
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.combat-entity.vfx-frenzy .entity-vfx-layer::after {
+  left: 70%;
+  animation-delay: 0.3s;
+  font-size: 6px;
+}
+
+@keyframes vfx-frenzy-particles {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 0.8; }
+  80% { opacity: 0.4; }
+  100% { transform: translateY(-35px) scale(1.2); opacity: 0; }
+}
+
+.combat-entity.vfx-frenzy .entity-icon {
+  filter: drop-shadow(0 0 8px #ff0000) brightness(1.2);
+}
+
+/* 护盾特效独立于伪元素，使用子元素 */
+.combat-entity.vfx-holy_armor .entity-icon {
+  position: relative;
+}
+
+.combat-entity.vfx-holy_armor .entity-icon::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  background: 
+    repeating-linear-gradient(30deg, rgba(255, 215, 0, 0.1) 0px, rgba(255, 215, 0, 0.1) 2px, transparent 2px, transparent 4px),
+    repeating-linear-gradient(150deg, rgba(255, 215, 0, 0.1) 0px, rgba(255, 215, 0, 0.1) 2px, transparent 2px, transparent 4px);
+  background-color: rgba(255, 215, 0, 0.15);
+  box-shadow: inset 0 0 8px #ffd700, 0 0 12px rgba(255, 215, 0, 0.5);
+  border: 1.5px solid rgba(255, 215, 0, 0.8);
+  pointer-events: none;
+  z-index: 5;
+  animation: vfx-shield-rotate 8s linear infinite;
+}
+
+@keyframes vfx-shield-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.combat-entity.vfx-poison_infusion .entity-icon {
+  filter: drop-shadow(0 0 8px #32cd32);
+}
+
+/* 毒素图标单独使用另一个位置，不使用 entity-icon 的伪元素以免冲突 */
+.combat-entity.vfx-poison_infusion .entity-icon::before {
+  content: '🧪';
+  position: absolute;
+  top: -12px;
+  right: -10px;
+  font-size: 14px;
+  z-index: 6;
+  filter: none; /* 防止被父级滤镜影响颜色 */
+}
+
+.combat-entity.vfx-poisoned {
+  filter: hue-rotate(90deg) brightness(0.8);
+}
+
+.combat-entity.vfx-poisoned::after {
+  content: '☠';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #32cd32;
+  font-size: 16px;
+  animation: poison-float 1s infinite;
+}
+
+/* 治疗特效 */
+.combat-entity.vfx-heal {
+  animation: heal-pulse 0.5s ease-out;
+}
+
+@keyframes heal-pulse {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(2) drop-shadow(0 0 15px #32cd32); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes poison-float {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-10px); opacity: 0; }
+}
+
+/* 技能激活状态 (激活期间持续变色，无发光) */
+.skill-slot.active {
+  border-color: #00ffff;
+  color: #008b8b;
+  transform: scale(1.05);
+}
+
+@keyframes skill-active-pulse {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.1); }
 }
 
 .hero-center-display {
@@ -371,6 +661,72 @@ body {
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
+
+/* --- 光环可视化特效 --- */
+@keyframes aura-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.2; }
+  100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.5; }
+}
+
+@keyframes aura-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 大光环容器 (道士脚下) */
+.aura-container-large {
+  position: absolute;
+  bottom: 0; /* 对应 .meditation-wrap 的 bottom */
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 5; /* 在 meditator (z-index 10) 下面 */
+  pointer-events: none;
+}
+
+.aura-large {
+  position: absolute;
+  top: 0; /* 修改：使其中心位于脚下正中 */
+  left: 0;
+  transform: translate(-50%, -50%) scale(0.95);
+  opacity: 0.5;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-shadow: inset 0 0 15px currentColor, 0 0 15px currentColor;
+  animation: aura-pulse 3s infinite ease-in-out;
+}
+
+/* 小光环容器 (战宠) */
+.aura-container-small {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 5; /* 修改：放在战宠图标下面 */
+}
+
+.aura-small {
+  position: absolute;
+  top: 0; /* 修改：相对于 combat-entity 中心点 */
+  left: 0;
+  transform: translate(-50%, -50%) scale(0.95);
+  opacity: 0.5;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  box-shadow: inset 0 0 5px currentColor, 0 0 5px currentColor;
+  animation: aura-pulse 2s infinite ease-in-out;
+}
+
+/* 不同类型光环的颜色定义 */
+.aura-atk-speed { color: rgba(255, 255, 0, 0.8); }   /* 黄色 - 攻速 */
+.aura-hp { color: rgba(0, 255, 0, 0.8); }          /* 绿色 - 加血 */
+.aura-damage { color: rgba(255, 0, 0, 0.8); }      /* 红色 - 增伤 */
+.aura-dodge { color: rgba(180, 0, 255, 0.8); }     /* 紫色 - 闪避 */
+.aura-double-atk { color: rgba(255, 120, 0, 0.8); } /* 橙色 - 双攻 */
+.aura-reduction { color: rgba(0, 100, 255, 0.8); }  /* 蓝色 - 免伤 */
 
 /* 通用旋转逻辑：先旋转角度，位移半径，再反向旋转角度使文字保持正方向 */
 /* 角度分配在 -60deg 到 60deg 之间 (对应 30-150 度数学极坐标) */
@@ -597,8 +953,22 @@ body {
 }
 
 /* 隐藏状态类 */
-.modal-overlay.hidden {
+.modal-overlay.hidden, .hidden {
   display: none !important;
+}
+
+.ios-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  margin: 0 4px;
+  font-size: 16px;
+  vertical-align: middle;
 }
 
 .modal-content {
@@ -1074,10 +1444,15 @@ body {
   margin: 0 0 20px 0;
 }
 
-.auto-strike-panel .bonus-footer,
-.mana-panel .bonus-footer {
-  width: 100%;
-  padding: 0 10px;
+.auto-strike-modal-timer {
+  color: #ef4444;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.buff-btn .btn-content {
+  pointer-events: none;
 }
 
 /* --- 在线奖励面板特定样式 --- */
@@ -2184,3 +2559,20 @@ body {
   transform: translateY(5px);
 }
 
+.desktop-claim-btn.disabled {
+  background: #9ca3af;
+  border-bottom-width: 3px;
+  transform: translateY(2px);
+  cursor: pointer; /* 保持手型，因为点击还要关闭界面 */
+}
+
+.pet-info .class-text { 
+  color: var(--blue); 
+  font-size: 12px; 
+  font-weight: bold; 
+  background: #eff6ff;
+  border: 1px solid var(--blue);
+  padding: 0px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+}

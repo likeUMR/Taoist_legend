@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 添加到桌面管理器：负责 PWA 安装逻辑和跨平台引导
  */
@@ -9,7 +11,7 @@ export class AddDesktopManager {
     this.platform = this._checkPlatform();
     
     // 从 localStorage 加载是否已领取奖励
-    this.isRewardClaimed = localStorage.getItem('desktop_reward_claimed') === 'true';
+    this.isRewardClaimed = GameConfig.getStorageItem('desktop_reward_claimed') === 'true';
     
     this.onPromptAvailable = null; // 当浏览器支持一键添加时触发
     this.onInstalled = null;      // 当安装完成时触发
@@ -89,7 +91,7 @@ export class AddDesktopManager {
     const rewardAmount = 500;
     this.currencyManager.addIngot(rewardAmount);
     this.isRewardClaimed = true;
-    localStorage.setItem('desktop_reward_claimed', 'true');
+    GameConfig.setStorageItem('desktop_reward_claimed', 'true');
     
     return { success: true, amount: rewardAmount };
   }

@@ -42,9 +42,17 @@ export class PetManager {
    */
   spawnPets(petsData, positions, deployInterval = 1.0) {
     const limit = Math.min(petsData.length, positions.length);
+    
+    // 检查是否开启了自动出击
+    const isAutoStrike = window.statManager ? window.statManager.isAutoStrikeActive() : true;
+    
     for (let i = 0; i < limit; i++) {
       const pos = positions[i];
       const data = petsData[i];
+      
+      // 如果未开启自动出击，则设置一个极大的延迟（只能通过手动点击触发）
+      const delay = isAutoStrike ? (i * deployInterval) : 999999;
+      
       const pet = new Pet({
         x: pos.x,
         y: pos.y,
@@ -55,13 +63,38 @@ export class PetManager {
         atkSpeed: data.atkSpeed || 0.8,
         name: `宠${data.id}`,
         worldBounds: this.worldBounds,
-        deployDelay: i * deployInterval // 设置出击延迟
+        deployDelay: delay // 设置出击延迟
       });
 
       this.pets.push(pet);
       this.engine.addEntity(pet);
+
+      // 如果有激活的主动技能，重新应用效果 (用于关卡切换等场景)
+      if (window.activeSkillManager) {
+        window.activeSkillManager.reapplyActiveSkills(pet);
+      }
     }
     this.allDeadLogged = false;
+  }
+
+  /**
+   * 手动出击：让下一个处于等待状态（有延迟）的战宠立即行动
+   */
+  deployNextPet() {
+    console.log(`【调试】当前战宠总数: ${this.pets.length}`);
+    // 找到第一个 deployDelay > 0 的战宠
+    const nextPet = this.pets.find(p => p.deployDelay > 0 && !p.isDead);
+    if (nextPet) {
+      console.log(`【调试】找到待出击战宠: ${nextPet.name}, 当前延迟: ${nextPet.deployDelay.toFixed(2)}s`);
+      nextPet.deployDelay = 0;
+      console.log(`【系统】手动出击：${nextPet.name} 提前加入战斗！`);
+      return true;
+    }
+    
+    // 如果没找到，打印一下所有存活战宠的状态，方便分析
+    const status = this.pets.map(p => `${p.name}(delay:${p.deployDelay.toFixed(2)})`).join(', ');
+    console.log(`【调试】未找到待出击战宠。当前战宠状态: ${status}`);
+    return false;
   }
 
   /**

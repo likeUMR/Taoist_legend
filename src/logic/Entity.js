@@ -17,6 +17,121 @@ export class Entity {
     this.worldBounds = options.worldBounds || null; // { width, height }
     this.lootGold = options.lootGold || 0; // 死亡掉落金币
     this.onDeath = null; // 死亡回调
+    this.buffs = []; // 增益/减益效果列表
+  }
+
+  /**
+   * 添加一个 Buff
+   * @param {Object} buff { id, type, value, duration, timer }
+   */
+  addBuff(buff) {
+    // 如果是同类型的 Buff，尝试覆盖或刷新
+    const existingIndex = this.buffs.findIndex(b => b.type === buff.type);
+    if (existingIndex > -1) {
+      const existing = this.buffs[existingIndex];
+      // 如果是中毒，高伤害覆盖低伤害，或者刷新持续时间
+      if (buff.type === 'poison') {
+        if (buff.value >= existing.value) {
+          this.buffs[existingIndex] = { ...buff, timer: buff.duration };
+        }
+      } else {
+        // 其他 Buff 简单刷新时间
+        existing.timer = buff.duration;
+        existing.value = buff.value;
+      }
+    } else {
+      this.buffs.push({ ...buff, timer: buff.duration });
+    }
+  }
+
+  /**
+   * 更新 Buff 计时器与效果
+   */
+  updateBuffs(dt) {
+    for (let i = this.buffs.length - 1; i >= 0; i--) {
+      const buff = this.buffs[i];
+      
+      // 处理持续性效果 (如中毒)
+      if (buff.type === 'poison') {
+        buff.damageTimer = (buff.damageTimer || 0) + dt;
+        if (buff.damageTimer >= 1.0) {
+          this.takeDamage(buff.value); // 这里的 value 是每秒伤害
+          buff.damageTimer -= 1.0;
+        }
+      }
+
+      // duration 为 -1 表示永久
+      if (buff.duration !== -1) {
+        buff.timer -= dt;
+        if (buff.timer <= 0) {
+          this.buffs.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  /**
+   * 获取最终攻击力 (应用 Buff)
+   */
+  getFinalAtk() {
+    let multiplier = 1.0;
+    for (const buff of this.buffs) {
+      if (buff.type === 'atk_mult') {
+        multiplier *= buff.value;
+      }
+      if (buff.type === 'frenzy') {
+        multiplier *= buff.value;
+      }
+    }
+    return this.atk * multiplier;
+  }
+
+  /**
+   * 获取最终移动速度 (应用 Buff)
+   */
+  getFinalSpeed() {
+    let multiplier = 1.0;
+    for (const buff of this.buffs) {
+      if (buff.type === 'speed_mult') {
+        multiplier *= buff.value;
+      }
+      if (buff.type === 'frenzy') {
+        multiplier *= buff.value;
+      }
+    }
+    return this.speed * multiplier;
+  }
+
+  /**
+   * 受到伤害
+   */
+  takeDamage(amount) {
+    if (this.isDead) return;
+    
+    // 防御性检查：防止 NaN 导致锁血
+    let damage = parseFloat(amount);
+    if (isNaN(damage)) {
+      console.warn(`【战斗】实体 ${this.name} 收到非法伤害数值:`, amount);
+      return;
+    }
+
+    // 应用减伤 Buff (如神圣战甲)
+    let finalAmount = damage;
+    for (const buff of this.buffs) {
+      if (buff.type === 'damage_reduction') {
+        finalAmount *= (1 - buff.value);
+      }
+      if (buff.type === 'holy_armor') {
+        finalAmount *= (1 - buff.value);
+      }
+    }
+
+    this.hp -= finalAmount;
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.isDead = true;
+      if (this.onDeath) this.onDeath(this);
+    }
   }
 
   /**
@@ -38,31 +153,6 @@ export class Entity {
 
   update(dt, engine) {
     // 基类不实现具体逻辑
-  }
-
-  /**
-   * 受到伤害
-   * @param {number} amount 伤害数值
-   * @param {Entity} attacker 攻击者 (用于反击)
-   */
-  takeDamage(amount, attacker = null) {
-    if (this.isDead) return;
-
-    this.hp = Math.max(0, this.hp - amount);
-    
-    // 逻辑：敌人被攻击时反击
-    if (attacker && this.side === 'enemy' && !this.isDead) {
-      console.log(`敌人反击了 ${attacker.name}! 伤害: ${this.atk}`);
-      attacker.takeDamage(this.atk); // 反击不传递攻击者，防止死循环
-    }
-
-    if (this.hp <= 0) {
-      this.isDead = true;
-      console.log(`${this.name} 已被击败`);
-      if (this.onDeath) {
-        this.onDeath(this);
-      }
-    }
   }
 
   getDistance(other) {

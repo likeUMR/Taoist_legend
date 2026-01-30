@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 修炼管理类：负责加载 upgrades.csv 中“加点-”开头的配置并管理进度
  */
@@ -21,6 +23,26 @@ export class CultivationManager {
       '双倍掉落': '击败敌人时有几率掉落双倍金币',
       '金币消耗': '减少战宠强化所需的金币'
     };
+
+    this.load();
+  }
+
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_cultivation_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      for (const key in data) {
+        this.currentLevels.set(key, data[key]);
+      }
+    }
+  }
+
+  save() {
+    const data = {};
+    for (const [key, val] of this.currentLevels.entries()) {
+      data[key] = val;
+    }
+    GameConfig.setStorageItem('taoist_cultivation_data', JSON.stringify(data));
   }
 
   async init() {
@@ -128,6 +150,7 @@ export class CultivationManager {
         this.currencyManager.setPassiveGoldMultiplier(nextData.value);
       }
       
+      this.save();
       return { success: true, newLevel: currentLevel + 1 };
     } else {
       return { success: false, reason: "金币不足" };

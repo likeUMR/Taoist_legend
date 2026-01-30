@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 光环管理类：从配置表加载以“光环_v1”结尾的项，管理其等级和升级
  */
@@ -6,6 +8,23 @@ export class AuraManager {
     this.currencyManager = currencyManager;
     this.auras = new Map(); // name -> { levels: [], currentLevel: 0 }
     this.auraNames = []; // 存储所有发现的光环名称 (不带 _v1 后缀)
+    this.savedLevels = {}; // 暂存从本地加载的等级数据
+    this.load();
+  }
+
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_aura_data');
+    if (saved) {
+      this.savedLevels = JSON.parse(saved);
+    }
+  }
+
+  save() {
+    const data = {};
+    for (const [name, aura] of this.auras.entries()) {
+      data[name] = aura.currentLevel;
+    }
+    GameConfig.setStorageItem('taoist_aura_data', JSON.stringify(data));
   }
 
   /**
@@ -30,7 +49,7 @@ export class AuraManager {
           if (!this.auras.has(cleanName)) {
             this.auras.set(cleanName, {
               levels: [],
-              currentLevel: 0
+              currentLevel: this.savedLevels[cleanName] || 0
             });
             this.auraNames.push(cleanName);
           }
@@ -114,6 +133,7 @@ export class AuraManager {
 
     if (isSuccess) {
       aura.currentLevel++;
+      this.save();
       return { success: true, newLevel: aura.currentLevel };
     } else {
       return { success: false, reason: "强化失败" };

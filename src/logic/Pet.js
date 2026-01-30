@@ -15,6 +15,9 @@ export class Pet extends Entity {
   update(dt, engine) {
     if (this.isDead) return;
 
+    // 更新 Buff
+    this.updateBuffs(dt);
+
     // 处理出击延迟
     if (this.deployDelay > 0) {
       this.deployDelay -= dt;
@@ -41,14 +44,32 @@ export class Pet extends Entity {
         // 追击
         const dx = nearest.x - this.x;
         const dy = nearest.y - this.y;
-        this.x += (dx / minDist) * this.speed * dt;
-        this.y += (dy / minDist) * this.speed * dt;
+        this.x += (dx / minDist) * this.getFinalSpeed() * dt;
+        this.y += (dy / minDist) * this.getFinalSpeed() * dt;
       } else {
         // 攻击
         if (this.attackCooldown <= 0) {
-          nearest.takeDamage(this.atk, this); // 传入自身作为攻击者
+          const finalAtk = this.getFinalAtk();
+          nearest.takeDamage(finalAtk);
+          
+          // 触发被动技能钩子
+          if (window.passiveSkillManager) {
+            window.passiveSkillManager.triggerPassive(this, nearest);
+          }
+
+          // 处理中毒注入逻辑
+          const poisonInfusionBuff = this.buffs.find(b => b.type === 'poison_infusion');
+          if (poisonInfusionBuff) {
+            nearest.addBuff({
+              type: 'poison',
+              value: finalAtk * (poisonInfusionBuff.value - 1), // 每秒伤害 = 攻击力 * (强度系数-1)
+              duration: -1, // 永久
+              id: `poison_from_${this.id}`
+            });
+          }
+
           this.attackCooldown = this.atkSpeed; 
-          console.log(`战宠攻击了敌人！造成伤害: ${this.atk}，敌人剩余血量: ${nearest.hp}`);
+          console.log(`战宠攻击了敌人！造成伤害: ${finalAtk}，敌人剩余血量: ${nearest.hp}`);
         }
       }
     }

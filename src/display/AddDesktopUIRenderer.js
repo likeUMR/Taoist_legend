@@ -8,6 +8,7 @@ export class AddDesktopUIRenderer {
     this.closeBtn = this.modal.querySelector('.close-btn');
     this.claimBtn = this.modal.querySelector('.desktop-claim-btn');
     this.stepsList = this.modal.querySelector('.steps-list');
+    this.entryBtn = document.getElementById('desktop-entry-btn'); // 获取入口按钮
     
     this._init();
   }
@@ -19,6 +20,8 @@ export class AddDesktopUIRenderer {
     this.manager.onInstalled = () => {
       this.render();
     };
+
+    // 监听奖励领取状态变化 (如果有必要)
   }
 
   render() {
@@ -26,6 +29,11 @@ export class AddDesktopUIRenderer {
 
     const isClaimed = this.manager.getIsRewardClaimed();
     const platform = this.manager.platform;
+
+    // 即使领过奖励也保持入口按钮可见
+    if (this.entryBtn) {
+      this.entryBtn.classList.remove('hidden');
+    }
 
     // 根据平台更新引导步骤
     if (platform === 'ios') {
@@ -53,7 +61,11 @@ export class AddDesktopUIRenderer {
   }
 
   async handleClaimClick() {
-    if (this.manager.getIsRewardClaimed()) return;
+    // 如果已经领过奖，点击按钮则直接关闭界面
+    if (this.manager.getIsRewardClaimed()) {
+      this.modal.classList.add('hidden');
+      return;
+    }
 
     // 对于支持一键添加的平台，尝试触发
     if (this.manager.platform !== 'ios') {
@@ -65,6 +77,8 @@ export class AddDesktopUIRenderer {
     if (result.success) {
       this.render();
       if (window.showFeedback) window.showFeedback(true);
+      
+      // 领取成功后不再自动关闭弹窗
       console.log(`添加桌面奖励领取成功: ${result.amount} 元宝`);
     }
   }
@@ -75,20 +89,6 @@ export class AddDesktopUIRenderer {
       this.handleClaimClick();
     });
 
-    this.closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.modal.classList.add('hidden');
-    });
-
-    this.modal.addEventListener('click', (e) => {
-      if (e.target === this.modal) {
-        this.modal.classList.add('hidden');
-      }
-    });
-
-    const panel = this.modal.querySelector('.desktop-panel');
-    if (panel) {
-      panel.addEventListener('click', (e) => e.stopPropagation());
-    }
+    // 移除冗余的关闭监听器，main.js 已统一处理
   }
 }

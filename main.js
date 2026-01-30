@@ -1,3 +1,5 @@
+import { ActiveSkillManager } from './src/logic/ActiveSkillManager.js';
+import { PassiveSkillManager } from './src/logic/PassiveSkillManager.js';
 import { CombatEngine } from './src/logic/CombatEngine.js';
 import { DOMRenderer } from './src/display/DOMRenderer.js';
 import { EnemyManager } from './src/logic/EnemyManager.js';
@@ -25,7 +27,10 @@ import { OnlineRewardManager } from './src/logic/OnlineRewardManager.js';
 import { OnlineRewardUIRenderer } from './src/display/OnlineRewardUIRenderer.js';
 import { AddDesktopManager } from './src/logic/AddDesktopManager.js';
 import { AddDesktopUIRenderer } from './src/display/AddDesktopUIRenderer.js';
+import { StoryManager } from './src/logic/StoryManager.js';
+import { StoryUIRenderer } from './src/display/StoryUIRenderer.js';
 import { formatNumber } from './src/utils/format.js';
+import { AuraVisualRenderer } from './src/display/AuraVisualRenderer.js';
 
 // --- 界面控制逻辑 ---
 const petModal = document.getElementById('pet-modal');
@@ -45,6 +50,7 @@ const storyModal = document.getElementById('story-modal');
 
 // 初始化管理器
 const statManager = new StatManager();
+  window.statManager = statManager; // 暴露给全局，方便其他模块查询状态
 const currencyManager = new CurrencyManager();
 const videoManager = new VideoRewardManager();
 const cultivationManager = new CultivationManager(currencyManager);
@@ -55,10 +61,19 @@ const engine = new CombatEngine();
 const renderer = new DOMRenderer('battle-wrap');
 const enemyManager = new EnemyManager(engine);
 const petManager = new PetManager(engine);
+const activeSkillManager = new ActiveSkillManager(skillManager, statManager, petManager);
+const passiveSkillManager = new PassiveSkillManager(skillManager, engine, renderer);
+
+window.activeSkillManager = activeSkillManager;
+window.passiveSkillManager = passiveSkillManager;
+window.engine = engine; // 方便 DOMRenderer 中的飞行物逻辑访问引擎
 const taskManager = new TaskManager(currencyManager);
 const taskRenderer = new TaskUIRenderer('.quest-scroll', taskManager);
 const onlineRewardManager = new OnlineRewardManager(currencyManager);
 const onlineRewardRenderer = new OnlineRewardUIRenderer(onlineModal.querySelector('.pet-list-content'), onlineRewardManager);
+
+const storyManager = new StoryManager(petCollection);
+const storyUIRenderer = new StoryUIRenderer('story-modal', storyManager);
 
 const desktopManager = new AddDesktopManager(currencyManager);
 const desktopRenderer = new AddDesktopUIRenderer('#desktop-modal', desktopManager);
@@ -132,6 +147,7 @@ const speedUIRenderer = new SpeedUIRenderer(speedModalBody, statManager);
 const cultUIRenderer = new CultivationUIRenderer(cultModalBody.querySelector('.pet-list-content'), cultivationManager);
 const auraUIRenderer = new AuraUIRenderer(auraModal.querySelector('.modal-body'), auraManager);
 const skillUIRenderer = new SkillUIRenderer(skillModalBody, skillManager);
+const auraVisualRenderer = new AuraVisualRenderer(auraManager);
 
 // 获取等级角标元素
 const speedLevelBadge = document.querySelector('.col-right .buff-btn:nth-child(1) .level-badge-diamond span');
@@ -367,6 +383,19 @@ function closeAutoStrikeModal() {
   autoStrikeModal.classList.add('hidden');
 }
 
+// 自动出击按钮逻辑 (弹窗内部)
+if (autoStrikeModal) {
+  const upgradeBtn = autoStrikeModal.querySelector('.upgrade-action-btn');
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', () => {
+      statManager.activateAutoStrike();
+      showFeedback(true);
+      closeAutoStrikeModal();
+      updateBuffLevelUI(); // 更新主界面角标
+    });
+  }
+}
+
 // --- 补充法力面板逻辑 ---
 function openManaModal() {
   manaModal.classList.remove('hidden');
@@ -401,6 +430,27 @@ function openOnlineModal() {
 function closeOnlineModal() {
   onlineModal.classList.add('hidden');
 }
+
+/**
+ * 让主界面对应的技能图标闪烁一下
+ * @param {string} skillName 
+ */
+function flashSkillIcon(skillName) {
+   const slot = document.querySelector(`.skill-slot[data-skill="${skillName}"]`);
+   if (!slot) return;
+ 
+   const flashClass = 'vfx-ui-skill-flash';
+   slot.classList.add(flashClass);
+  
+  const onEnd = () => {
+    slot.classList.remove(flashClass);
+    slot.removeEventListener('animationend', onEnd);
+  };
+  slot.addEventListener('animationend', onEnd);
+}
+
+// 导出给逻辑层使用
+window.flashSkillIcon = flashSkillIcon;
 
 // --- 冒险面板逻辑 ---
 let adventureScrollController = null;
@@ -439,6 +489,9 @@ function closeSettingsModal() {
 // --- 剧情面板逻辑 ---
 function openStoryModal() {
   storyModal.classList.remove('hidden');
+  if (storyUIRenderer) {
+    storyUIRenderer.render();
+  }
 }
 
 function closeStoryModal() {
@@ -501,6 +554,61 @@ petModalBody.addEventListener('click', (e) => {
     petScrollController.updateBounds();
   }
 });
+
+// 主动技能点击处理
+const activeSkillSlots = document.querySelectorAll('.skill-slot.active-skill');
+activeSkillSlots.forEach(slot => {
+      slot.addEventListener('click', () => {
+        const skillName = slot.dataset.skill;
+        const result = activeSkillManager.useSkill(skillName);
+        if (result.success) {
+          updateMainManaBar(); // 扣减法力后立即更新 UI
+        } else {
+          console.log(`【技能】释放失败: ${result.reason}`);
+        }
+      });
+    });
+
+/**
+ * 更新主界面技能 UI 状态 (主动 + 被动)
+ */
+function updateSkillsUI() {
+  // 1. 处理主动技能
+  const activeSkillSlots = document.querySelectorAll('.skill-slot.active-skill');
+  activeSkillSlots.forEach(slot => {
+    const skillName = slot.dataset.skill;
+    const uiState = activeSkillManager.getSkillUIState(skillName);
+    if (!uiState) return;
+
+    // 未学习的技能隐藏 (占位)
+    const level = activeSkillManager.getSkillLevel(skillName);
+    slot.style.visibility = level <= 0 ? 'hidden' : 'visible';
+
+    // 更新可用状态 (金色或灰色)
+    slot.classList.toggle('usable', uiState.isUsable);
+    // 更新激活状态 (呼吸灯或发光特效)
+    slot.classList.toggle('active', uiState.isActive);
+
+    // 更新 CD 遮罩
+    const cdOverlay = slot.querySelector('.cd-overlay');
+    if (cdOverlay) {
+      cdOverlay.style.height = `${uiState.cdPercent * 100}%`;
+    }
+  });
+
+  // 2. 处理被动技能
+  const passiveSkillSlots = document.querySelectorAll('.skill-slot.passive-skill');
+  passiveSkillSlots.forEach(slot => {
+    const skillName = slot.dataset.skill;
+    const level = passiveSkillManager.getSkillLevel(skillName);
+    
+    // 0 级隐藏但占位
+    slot.style.visibility = level <= 0 ? 'hidden' : 'visible';
+    
+    // 被动技能始终保持灰色背景，只有在触发时通过 flashSkillIcon 闪烁金色
+    slot.classList.remove('usable');
+  });
+}
 
 // 金币加成面板内部点击
 bonusModalBody.addEventListener('click', (e) => {
@@ -566,25 +674,29 @@ cultModalBody.addEventListener('click', (e) => {
 });
 
 // 光环面板内部点击
-auraModal.querySelector('.modal-body').addEventListener('click', (e) => {
-  const upgradeBtn = e.target.closest('.upgrade-btn');
-  if (upgradeBtn) {
-    const name = upgradeBtn.dataset.name;
-    const isAd = upgradeBtn.dataset.ad === 'true';
-    
-    if (isAd) {
-      videoManager.consumeVideo('aura');
+const auraModalBody = auraModal ? auraModal.querySelector('.modal-body') : null;
+if (auraModalBody) {
+  auraModalBody.addEventListener('click', (e) => {
+    const upgradeBtn = e.target.closest('.upgrade-btn');
+    if (upgradeBtn) {
+      const name = upgradeBtn.dataset.name;
+      const isAd = upgradeBtn.dataset.ad === 'true';
+      
+      if (isAd) {
+        videoManager.consumeVideo('aura');
+      }
+      
+      const result = auraManager.upgrade(name, isAd);
+      
+      showFeedback(result.success);
+      if (result.success) {
+        auraUIRenderer.render();
+        auraVisualRenderer.refresh(); // 升级成功后刷新光环视觉特效
+        if (auraScrollController) auraScrollController.updateBounds();
+      }
     }
-    
-    const result = auraManager.upgrade(name, isAd);
-    
-    showFeedback(result.success);
-    if (result.success) {
-      auraUIRenderer.render();
-      if (auraScrollController) auraScrollController.updateBounds();
-    }
-  }
-});
+  });
+}
 
 // 技能面板内部点击事件委托
 skillModalBody.addEventListener('click', (e) => {
@@ -607,6 +719,25 @@ skillModalBody.addEventListener('click', (e) => {
   }
 });
 
+// 补充法力面板内部点击
+const manaModalBody = manaModal ? manaModal.querySelector('.modal-body') : null;
+if (manaModalBody) {
+  manaModalBody.addEventListener('click', (e) => {
+    const upgradeActionBtn = e.target.closest('.upgrade-action-btn');
+    if (upgradeActionBtn) {
+      // 模拟看广告逻辑
+      videoManager.consumeVideo('mana');
+      
+      const result = statManager.refillMana();
+      if (result.success) {
+        showFeedback(true);
+        updateMainManaBar();
+        closeManaModal();
+      }
+    }
+  });
+}
+
 // 获取主界面生命条元素
 const mainHpBarFill = document.querySelector('.player-status .stat-item .fill.green');
 const mainHpBarVal = document.querySelector('.player-status .stat-item .val');
@@ -620,8 +751,27 @@ function updateMainHpBar() {
   mainHpBarVal.textContent = `${formatNumber(stats.current, true)}/${formatNumber(stats.max, true)}`;
 }
 
+// 获取主界面法力条元素
+const mainManaBarFill = document.querySelector('.player-status .stat-item:nth-child(2) .fill.blue');
+const mainManaBarVal = document.querySelector('.player-status .stat-item:nth-child(2) .val');
+
+// 更新主界面法力条
+function updateMainManaBar() {
+  if (!mainManaBarFill || !mainManaBarVal || !statManager) return;
+  
+  const percent = (statManager.mana / statManager.maxMana) * 100;
+  mainManaBarFill.style.width = `${percent}%`;
+  mainManaBarVal.textContent = `${statManager.mana.toFixed(1)}/${statManager.maxMana.toFixed(1)}`;
+}
+
 // 更新主界面挂机按钮时间
 const afkTimeSmall = document.querySelector('.afk-time-small');
+const autoStrikeTimeSmall = document.querySelector('.auto-strike-time-small');
+const autoStrikeModalTimer = document.querySelector('.auto-strike-modal-timer');
+const autoStrikeUpgradeBtn = document.querySelector('#auto-strike-modal .upgrade-action-btn');
+const autoStrikeHint = document.querySelector('#auto-strike-modal .highlight-hint');
+const autoStrikeDuration = document.querySelector('#auto-strike-modal .duration-text');
+
 function updateAfkButton() {
   if (!window.afkManager || !afkTimeSmall) return;
   
@@ -641,6 +791,44 @@ function updateAfkButton() {
     }
     afkTimeSmall.textContent = timeStr;
     afkTimeSmall.classList.remove('text-red');
+  }
+}
+
+// 更新主界面自动出击按钮倒计时
+function updateAutoStrikeButton() {
+  if (!statManager || !autoStrikeTimeSmall) return;
+  
+  const isActive = statManager.isAutoStrikeActive();
+  const totalSeconds = Math.ceil(statManager.autoStrikeTimer);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  // 1. 更新主界面小按钮
+  if (isActive) {
+    autoStrikeTimeSmall.textContent = timeStr;
+    autoStrikeTimeSmall.classList.remove('hidden');
+    autoStrikeTimeSmall.classList.add('text-red');
+  } else {
+    autoStrikeTimeSmall.classList.add('hidden');
+  }
+
+  // 2. 更新弹窗内容 (如果弹窗打开中)
+  if (autoStrikeModal && !autoStrikeModal.classList.contains('hidden')) {
+    if (isActive) {
+      if (autoStrikeModalTimer) {
+        autoStrikeModalTimer.textContent = `剩余时间: ${timeStr}`;
+        autoStrikeModalTimer.classList.remove('hidden');
+      }
+      if (autoStrikeUpgradeBtn) autoStrikeUpgradeBtn.classList.add('hidden');
+      if (autoStrikeHint) autoStrikeHint.classList.add('hidden');
+      if (autoStrikeDuration) autoStrikeDuration.classList.add('hidden');
+    } else {
+      if (autoStrikeModalTimer) autoStrikeModalTimer.classList.add('hidden');
+      if (autoStrikeUpgradeBtn) autoStrikeUpgradeBtn.classList.remove('hidden');
+      if (autoStrikeHint) autoStrikeHint.classList.remove('hidden');
+      if (autoStrikeDuration) autoStrikeDuration.classList.remove('hidden');
+    }
   }
 }
 
@@ -722,6 +910,13 @@ if (onlineRewardBtn) {
   });
 }
 
+if (settingsBtn) {
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openSettingsModal();
+  });
+}
+
 if (adventureNavBtn) {
   adventureNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -729,11 +924,127 @@ if (adventureNavBtn) {
   });
 }
 
-if (settingsBtn) {
-  settingsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openSettingsModal();
+// --- 统一面板交互逻辑 (关闭与阻止冒泡) ---
+const modalConfigs = [
+  { modal: petModal, panel: '.pet-panel', closer: closePetModal },
+  { modal: bonusModal, panel: '.bonus-panel', closer: closeBonusModal },
+  { modal: speedModal, panel: '.bonus-panel', closer: closeSpeedModal },
+  { modal: cultivationModal, panel: '.modal-content', closer: closeCultModal },
+  { modal: auraModal, panel: '.modal-content', closer: closeAuraModal },
+  { modal: skillModal, panel: '.modal-content', closer: closeSkillModal },
+  { modal: afkModal, panel: '.afk-panel', closer: closeAfkModal },
+  { modal: desktopModal, panel: '.desktop-panel', closer: closeDesktopModal },
+  { modal: autoStrikeModal, panel: '.auto-strike-panel', closer: closeAutoStrikeModal },
+  { modal: manaModal, panel: '.mana-panel', closer: closeManaModal },
+  { modal: onlineModal, panel: '.online-panel', closer: closeOnlineModal },
+  { modal: adventureModal, panel: '.adventure-panel', closer: closeAdventureModal },
+  { modal: settingsModal, panel: '.settings-panel', closer: closeSettingsModal },
+  { modal: storyModal, panel: '.story-panel', closer: closeStoryModal }
+];
+
+modalConfigs.forEach(({ modal, panel, closer }) => {
+  if (!modal) return;
+  
+  // 点击遮罩层关闭
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closer();
   });
+
+  // 阻止面板内部点击冒泡到遮罩层
+  const panelEl = modal.querySelector(panel);
+  if (panelEl) {
+    panelEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // 统一处理内部的 close-btn 和 close-action-btn
+  const closeBtns = modal.querySelectorAll('.close-btn, .close-action-btn');
+  closeBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closer();
+    });
+  });
+});
+
+// --- 特定面板内部逻辑 ---
+
+// 挂机面板逻辑 (关卡切换与领取)
+if (afkModal) {
+  const afkPanel = afkModal.querySelector('.afk-panel');
+  if (afkPanel) {
+    afkPanel.addEventListener('click', (e) => {
+      // 注意：已经在统一逻辑中处理了 e.stopPropagation()
+      
+      const leftArrow = e.target.closest('.arrow-btn.left');
+      const rightArrow = e.target.closest('.arrow-btn.right');
+      const stageItem = e.target.closest('.stage-item');
+      const claimBtn = e.target.closest('.claim-btn');
+      const doubleClaimBtn = e.target.closest('.double-claim-btn');
+
+      if (leftArrow) {
+        if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('left');
+      } else if (rightArrow) {
+        if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('right');
+      } else if (stageItem && !stageItem.classList.contains('disabled')) {
+        const stage = parseInt(stageItem.dataset.stage);
+        if (window.afkManager) {
+          window.afkManager.setSelectedStage(stage);
+          window.afkUIRenderer.render();
+        }
+      } else if (claimBtn) {
+        if (window.afkManager) {
+          window.afkManager.claim(false);
+          window.afkUIRenderer.render();
+          showFeedback(true);
+        }
+      } else if (doubleClaimBtn) {
+        if (window.afkManager) {
+          window.afkManager.claim(true);
+          window.afkUIRenderer.render();
+          showFeedback(true);
+        }
+      }
+    });
+  }
+}
+
+// 设置面板内容逻辑 (仅 UI 状态记录)
+if (settingsModal) {
+  const settingsModalBody = settingsModal.querySelector('.modal-body');
+  if (settingsModalBody) {
+    settingsModalBody.addEventListener('click', (e) => {
+      const checkbox = e.target.closest('.custom-checkbox');
+      if (checkbox) {
+        checkbox.classList.toggle('checked');
+        const settingId = checkbox.id;
+        const isChecked = checkbox.classList.contains('checked');
+        console.log(`【系统】设置变更: ${settingId} = ${isChecked}`);
+      }
+    });
+  }
+}
+
+// 在线奖励面板内容逻辑
+if (onlineModal) {
+  const onlinePanel = onlineModal.querySelector('.online-panel');
+  if (onlinePanel) {
+    onlinePanel.addEventListener('click', (e) => {
+      const claimBtn = e.target.closest('.claim-btn-small');
+      if (claimBtn && !claimBtn.classList.contains('disabled')) {
+        const index = parseInt(claimBtn.dataset.index);
+        if (onlineRewardManager) {
+          const result = onlineRewardManager.claimReward(index);
+          if (result.success) {
+            onlineRewardRenderer.render();
+            showFeedback(true);
+            console.log(`【系统】在线奖励领取成功: ${result.reward.amount} ${result.reward.type}`);
+          }
+        }
+      }
+    });
+  }
 }
 
 if (storyBtn) {
@@ -743,309 +1054,16 @@ if (storyBtn) {
   });
 }
 
-// 关闭按钮
-if (closePetBtn) {
-  closePetBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closePetModal();
-  });
-}
-
-if (closeBonusBtn) {
-  closeBonusBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeBonusModal();
-  });
-}
-
-if (closeSpeedBtn) {
-  closeSpeedBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeSpeedModal();
-  });
-}
-
-if (closeCultBtn) {
-  closeCultBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeCultModal();
-  });
-}
-
-if (closeAuraBtn) {
-  closeAuraBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeAuraModal();
-  });
-}
-
-if (closeSkillBtn) {
-  closeSkillBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeSkillModal();
-  });
-}
-
-if (closeAfkBtn) {
-  closeAfkBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeAfkModal();
-  });
-}
-
-if (closeDesktopBtn) {
-  closeDesktopBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeDesktopModal();
-  });
-}
-
-if (closeAutoStrikeBtn) {
-  closeAutoStrikeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeAutoStrikeModal();
-  });
-}
-
-if (closeAutoStrikeActionBtn) {
-  closeAutoStrikeActionBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeAutoStrikeModal();
-  });
-}
-
-if (closeManaBtn) {
-  closeManaBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeManaModal();
-  });
-}
-
-if (closeManaActionBtn) {
-  closeManaActionBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeManaModal();
-  });
-}
-
-if (closeOnlineBtn) {
-  closeOnlineBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeOnlineModal();
-  });
-}
-
-if (closeAdventureBtn) {
-  closeAdventureBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeAdventureModal();
-  });
-}
-
-if (closeSettingsBtn) {
-  closeSettingsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeSettingsModal();
-  });
-}
-
-const storyConfirmBtn = storyModal.querySelector('.story-confirm-btn');
+const storyConfirmBtn = storyModal ? storyModal.querySelector('.story-confirm-btn') : null;
 if (storyConfirmBtn) {
   storyConfirmBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    closeStoryModal();
+    // 如果任务不可领取，点击按钮则关闭弹窗
+    if (!storyManager.isTaskClaimable) {
+      closeStoryModal();
+    }
   });
 }
-
-// 点击遮罩关闭
-petModal.addEventListener('click', (e) => {
-  if (e.target === petModal) {
-    closePetModal();
-  }
-});
-
-bonusModal.addEventListener('click', (e) => {
-  if (e.target === bonusModal) {
-    closeBonusModal();
-  }
-});
-
-speedModal.addEventListener('click', (e) => {
-  if (e.target === speedModal) {
-    closeSpeedModal();
-  }
-});
-
-cultivationModal.addEventListener('click', (e) => {
-  if (e.target === cultivationModal) {
-    closeCultModal();
-  }
-});
-
-auraModal.addEventListener('click', (e) => {
-  if (e.target === auraModal) {
-    closeAuraModal();
-  }
-});
-
-skillModal.addEventListener('click', (e) => {
-  if (e.target === skillModal) {
-    closeSkillModal();
-  }
-});
-
-afkModal.addEventListener('click', (e) => {
-  if (e.target === afkModal) {
-    closeAfkModal();
-  }
-});
-
-desktopModal.addEventListener('click', (e) => {
-  if (e.target === desktopModal) {
-    closeDesktopModal();
-  }
-});
-
-autoStrikeModal.addEventListener('click', (e) => {
-  if (e.target === autoStrikeModal) {
-    closeAutoStrikeModal();
-  }
-});
-
-manaModal.addEventListener('click', (e) => {
-  if (e.target === manaModal) {
-    closeManaModal();
-  }
-});
-
-onlineModal.addEventListener('click', (e) => {
-  if (e.target === onlineModal) {
-    closeOnlineModal();
-  }
-});
-
-adventureModal.addEventListener('click', (e) => {
-  if (e.target === adventureModal) {
-    closeAdventureModal();
-  }
-});
-
-settingsModal.addEventListener('click', (e) => {
-  if (e.target === settingsModal) {
-    closeSettingsModal();
-  }
-});
-
-storyModal.addEventListener('click', (e) => {
-  if (e.target === storyModal) {
-    closeStoryModal();
-  }
-});
-
-petModal.querySelector('.pet-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-bonusModal.querySelector('.bonus-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-speedModal.querySelector('.bonus-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-cultivationModal.querySelector('.modal-content').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-auraModal.querySelector('.modal-content').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-skillModal.querySelector('.modal-content').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-afkModal.querySelector('.afk-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-  
-  const leftArrow = e.target.closest('.arrow-btn.left');
-  const rightArrow = e.target.closest('.arrow-btn.right');
-  const stageItem = e.target.closest('.stage-item');
-  const claimBtn = e.target.closest('.claim-btn');
-  const doubleClaimBtn = e.target.closest('.double-claim-btn');
-
-  if (leftArrow) {
-    if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('left');
-  } else if (rightArrow) {
-    if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('right');
-  } else if (stageItem && !stageItem.classList.contains('disabled')) {
-    const stage = parseInt(stageItem.dataset.stage);
-    if (window.afkManager) {
-      window.afkManager.setSelectedStage(stage);
-      window.afkUIRenderer.render();
-    }
-  } else if (claimBtn) {
-    if (window.afkManager) {
-      window.afkManager.claim(false);
-      window.afkUIRenderer.render();
-      showFeedback(true);
-    }
-  } else if (doubleClaimBtn) {
-    // 预留广告接口，目前暂无广告直接领双倍
-    if (window.afkManager) {
-      window.afkManager.claim(true);
-      window.afkUIRenderer.render();
-      showFeedback(true);
-    }
-  }
-});
-
-desktopModal.querySelector('.desktop-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-autoStrikeModal.querySelector('.auto-strike-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-manaModal.querySelector('.mana-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-onlineModal.querySelector('.online-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-adventureModal.querySelector('.adventure-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-// 设置面板内部点击 (处理复选框切换)
-settingsModal.querySelector('.modal-body').addEventListener('click', (e) => {
-  const checkbox = e.target.closest('.custom-checkbox');
-  if (checkbox) {
-    checkbox.classList.toggle('checked');
-    const settingId = checkbox.id;
-    const isChecked = checkbox.classList.contains('checked');
-    console.log(`【系统】设置变更: ${settingId} = ${isChecked}`);
-    
-    // 根据 ID 处理具体逻辑
-    if (settingId === 'setting-sound') {
-      // 处理音效开关
-    } else if (settingId === 'setting-music') {
-      // 处理音乐开关
-    }
-  }
-});
-
-settingsModal.querySelector('.settings-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-storyModal.querySelector('.story-panel').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
 
 // 链接敌人死亡掉落逻辑
 enemyManager.onEnemyDeath = (enemy) => {
@@ -1140,6 +1158,20 @@ const petBounds = getGameContainerBounds();
 enemyManager.setWorldBounds(enemyBounds);
 petManager.setWorldBounds(petBounds);
 
+// 核心点击出击逻辑：点击道士（meditator）提前让下一个战宠开始行动
+const meditator = document.querySelector('.meditator');
+if (meditator) {
+  meditator.style.cursor = 'pointer'; // 增加手型反馈
+  meditator.addEventListener('click', (e) => {
+    e.stopPropagation(); // 防止冒泡到 battle-wrap
+    console.log('【系统】点击了道士，尝试提前出击战宠');
+    const success = petManager.deployNextPet();
+    if (!success) {
+      console.log('【系统】当前没有排队中的战宠');
+    }
+  });
+}
+
 // 初始化关卡管理器
 const levelManager = new LevelManager({
   engine,
@@ -1155,6 +1187,7 @@ const levelManager = new LevelManager({
 // 初始化并启动
 async function initGame() {
   await Promise.all([
+    storyManager.loadStories(),
     petCollection.init(),
     cultivationManager.init(), // 加载修炼数据
     auraManager.init(), // 加载光环数据
@@ -1172,13 +1205,24 @@ async function initGame() {
   currencyManager.addGold(0);
   currencyManager.addIngot(0);
   currencyManager.addLingfu(0);
+
+  // 初始渲染一次 UI
+  petUIRenderer.render();
+  cultUIRenderer.render();
+  auraUIRenderer.render();
+  skillUIRenderer.render();
+  auraVisualRenderer.refresh(); // 初始化光环视觉特效
+
   updateBuffLevelUI(); // 初始更新加成等级
+  updateMainManaBar(); // 初始更新法力条
   // 初始不打开战宠界面了
   gameLoop();
 }
 
 // 游戏主循环
 let lastAfkUpdateTime = 0;
+let lastStoryUpdateTime = 0;
+
 function gameLoop() {
   const { combatDt, rawDt } = engine.update();
   
@@ -1186,16 +1230,31 @@ function gameLoop() {
   enemyManager.update();
   petManager.update();
   levelManager.update(combatDt); // 关卡管理器也使用战斗倍速相关的 dt
+  activeSkillManager.update(combatDt); // 更新主动技能 CD
+  statManager.update(rawDt); // 更新全局加成计时器 (自动出击等)
   currencyManager.updateRecovery(rawDt); // 精华恢复使用真实 dt
   onlineRewardManager.update(rawDt); // 在线奖励使用真实 dt
   
   const now = Date.now();
   if (now - lastAfkUpdateTime >= 1000) {
     updateAfkButton();
+    updateAutoStrikeButton(); // 更新自动出击倒计时
     lastAfkUpdateTime = now;
+  }
+
+  // 更新主动技能 UI 状态
+  updateSkillsUI();
+
+  // 剧情任务状态检查 (每秒一次)
+  if (now - lastStoryUpdateTime >= 1000) {
+    storyManager.checkTaskStatus();
+    // 无论弹窗是否打开，都更新倒计时（因为现在主界面也有倒计时）
+    storyUIRenderer.updateTimer();
+    lastStoryUpdateTime = now;
   }
   
   renderer.render(engine.entities);
+  auraVisualRenderer.updatePetAuras(); // 每帧刷新战斗区域战宠的光环（以支持新生成的战宠）
   updateMainHpBar(); // 更新主界面生命条
   requestAnimationFrame(gameLoop);
 }

@@ -1,4 +1,5 @@
 import { formatNumber } from '../utils/format.js';
+import { GameConfig } from './GameConfig.js';
 
 /**
  * 挂机奖励管理类：负责挂机奖励的逻辑计算与数据持久化
@@ -134,11 +135,11 @@ export class AFKManager {
       lastClaimTime: this.lastClaimTime,
       selectedStage: this.selectedStage
     };
-    localStorage.setItem('taoist_afk_data', JSON.stringify(data));
+    GameConfig.setStorageItem('taoist_afk_data', JSON.stringify(data));
   }
 
   load() {
-    const saved = localStorage.getItem('taoist_afk_data');
+    const saved = GameConfig.getStorageItem('taoist_afk_data');
     if (saved) {
       const data = JSON.parse(saved);
       this.lastClaimTime = data.lastClaimTime || Date.now();

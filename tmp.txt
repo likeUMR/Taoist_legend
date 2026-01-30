@@ -1,83 +1,24 @@
-帮我继续复刻静态界面，接下来复刻屏幕左边的“守护沙城”按钮的面板
+现在我准备实现技能系统的具体效果，先实现主动技能，逻辑如下：
 
-同样，内容参考图片，风格参考项目已有的风格（但是这个的风格本来就比较特殊，可以稍微设计一下）中间的图片用占位表示即可，后续可能会替换。同样不需要逻辑，只需要静态界面即可
+1. 群体狂暴：开启后持续20s，期间所有战宠的移动速度和攻击力变为（强度系数）倍，（攻击力的加成为乘算，独立），持续时间结束后还原，消耗法力15
+2. 毒素注入：开启后持续30s，期间战宠攻击未中毒的敌人时，会另其中毒，每秒收到战宠攻击力（强度系数-1）倍的伤害，敌人的中毒状态为永久，当攻击力更高的战宠攻击已经中毒的敌人时，中毒状态覆盖。持续时间结束后不能使敌人中毒，已经中毒的不影响。消耗法力20
+3. 天降甘霖：使用后，所有存活的战宠，恢复30+20*（强度系数-1）%最大生命值的生命。冷却时间10/(强度系数)s，消耗法力10.
+4. 神圣战甲: 开启后持续40s，所有战宠免疫 （1- 1/（强度系数-1））%的伤害，消耗法力20
 
-
-
-
-
-这是一个非常好的想法，将 Web 游戏通过“添加到桌面”提升为 PWA（渐进式 Web 应用）体验，可以极大提高留存率。
-实现“添加到桌面”逻辑的核心难点在于浏览器标准的差异化。目前，最通用的技术方案是利用 PWA (Progressive Web App) 协议。
-以下是针对不同平台的实现方案设计：
-1. 核心技术原理：beforeinstallprompt 事件
-在支持的浏览器（如 Chrome, Edge, Android 浏览器）中，当 PWA 满足安装条件时，浏览器会触发 beforeinstallprompt 事件。我们可以拦截这个事件，将其保存下来，待用户点击我们的“添加桌面”按钮时再手动触发。
-2. 分平台讨论
-平台	环境	技术实现方式	是否可一键触发	是否可获取结果
-Android	Chrome / 各类主流浏览器	拦截 beforeinstallprompt	可以 (通过 JS)	可以 (知道用户同意还是拒绝)
-Windows	Chrome / Edge	拦截 beforeinstallprompt	可以 (弹出浏览器自带框)	可以 (知道用户同意还是拒绝)
-macOS	Chrome / Edge	拦截 beforeinstallprompt	可以	可以
-iOS (iPhone)	Safari	无 API	不可以 (必须手动点分享->添加)	不可以
-iOS (iPad)	Safari	无 API	不可以	不可以
-3. 实现方案设计
-第一步：准备工作 (PWA 基础)
-要触发安装逻辑，项目必须具备：
-manifest.json: 定义图标、名称、启动 URL。
-Service Worker: 即使是空的也要注册，否则浏览器不认为它是 PWA。
-HTTPS: 必须在 HTTPS 环境下运行（localhost 除外）。
-第二步：逻辑流程设计
-// 伪代码：AddDesktopManager.jsclass AddDesktopManager {    constructor() {        this.deferredPrompt = null;        this.platform = this.checkPlatform();        this.init();    }    init() {        // 监听浏览器安装提示事件        window.addEventListener('beforeinstallprompt', (e) => {            // 防止 Chrome 67 及更早版本自动显示提示            e.preventDefault();            // 暂存事件以备后用            this.deferredPrompt = e;            // 通知 UI 显示“添加桌面”按钮            this.showInstallUI();        });        // 监听安装完成        window.addEventListener('appinstalled', (evt) => {            console.log('用户已成功安装应用');            this.hideInstallUI();            // 这里可以给用户发奖励        });    }    // 处理按钮点击    async handleAddButtonClick() {        if (this.platform === 'ios') {            // iOS 处理逻辑：弹窗引导            this.showIOSGuidance();            return;        }        if (!this.deferredPrompt) {            // 如果没有事件，说明已经安装或者浏览器不支持            alert("请通过浏览器菜单手动添加");            return;        }        // 显示浏览器安装弹窗        this.deferredPrompt.prompt();        // 等待用户反馈        const { outcome } = await this.deferredPrompt.userChoice;        console.log(`用户选择: ${outcome}`);                if (outcome === 'accepted') {            console.log('用户接受了添加');        } else {            console.log('用户拒绝了添加');        }        // 无论结果如何，清空 deferredPrompt，因为它只能用一次        this.deferredPrompt = null;    }    checkPlatform() {        const ua = navigator.userAgent.toLowerCase();        if (/iphone|ipad|ipod/.test(ua)) return 'ios';        if (/android/.test(ua)) return 'android';        return 'pc';    }    showIOSGuidance() {        // 显示一个漂亮的浮层，引导用户：        // 1. 点击底部菜单的“分享”图标        // 2. 向下滑动找到“添加到主屏幕”        // 3. 点击右上角的“添加”    }}
-4. 具体到你的项目结构
-建议在 src/logic/ 下创建一个 AddDesktopManager.js，并在 src/display/ 下创建一个对应的渲染器 AddDesktopUIRenderer.js。
-AddDesktopManager.js: 负责维护 deferredPrompt 对象，检测平台，处理安装结果。
-AddDesktopUIRenderer.js:
-在 Windows/Android 下：显示一个“添加桌面领奖”的按钮。
-在 iOS 下：显示同样的按钮，但点击后弹出一个精美的图片/动图教程，教用户如何手动添加。
-5. 关键奖励逻辑
-既然“显示是简单的，逻辑是困难的”，我们可以利用 appinstalled 事件来做安装奖励：
-当 appinstalled 触发时，通过 CurrencyManager 给用户发放仙玉或灵石。
-难点： iOS 无法通过代码获知用户是否真的添加了。
-对策： 对于 iOS，可以在用户关闭引导弹窗后，给予一个“我已添加”的确认按钮（虽然无法验证真伪，但能提高转化）。或者干脆对 iOS 用户点击“查看教程”就发放奖励。
-下一步建议
-你可以先检查一下你的 index.html 是否已经引入了 manifest.json，如果没有，我们需要先创建这个基础配置文件。
-你想先从 manifest.json 的配置开始，还是直接写 AddDesktopManager 的逻辑代码？
-
----
-
-对于添加桌面面板的逻辑，我们之前准备了这些设计，你已经完成其中部分（D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\manifest.json，D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\sw.js，D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\src\logic\AddDesktopManager.js，D:\PROJECT\VSCode\AI+Game\Taoist_Legend_Game\src\display\AddDesktopUIRenderer.js）
-并且这个面板的外观原本在
-
-      <!-- 添加桌面奖励界面 -->
-      <div id="desktop-modal" class="modal-overlay hidden">
-        <div class="modal-content desktop-panel">
-          <button class="close-btn">&times;</button>
-          
-          <div class="ribbon-header">限定福利</div>
-          
-          <div class="modal-body">
-            <h3 class="desktop-subtitle">添加桌面领奖励</h3>
-            
-            <div class="steps-box">
-              <p class="steps-title">领取步骤：</p>
-              <ul class="steps-list">
-                <li>1.点击“添加桌面”按钮</li>
-                <li>2.添加到主屏幕</li>
-              </ul>
-              
-              <div class="reward-center">
-                <div class="chest-img">🎁</div> <!-- Temporary emoji, can be styled or replaced -->
-                <div class="reward-badge">
-                  <i class="icon ingot"></i>
-                  <span>500</span>
-                </div>
-              </div>
-            </div>
-            
-            <button class="desktop-claim-btn">领取奖励</button>
-          </div>
-        </div>
-      </div>
-
-实现
+开启技能后，战宠上面有相应的特效显示。
+技能如果可以使用，在主界面上面的按钮显示为金色（参考任务可以领取的颜色和表现）否则还是显示为原来的灰色
+每10s自然回复1点法力
 
 
-请继续完成剩下的（做到显示和逻辑分离，模块化，尽量小的修改量）
+然后，实现被动技能，被动技能为在普通攻击时，有概率触发的技能。
+
+1. 战争践踏：攻击时，有20%概率，对宠物中心，半径x的圆内的所有敌人，造成攻击力*（技能强度-1）*3 的伤害
+2. 飓风之息：攻击时，有20%概率，对宠物面向的敌人，发射一个无限穿透，到达屏幕边缘外消失的风球，对路过的敌人造成一次 攻击力*（技能强度-1）*4的伤害
+3. 流星火雨：攻击时，有20%概率，以宠物为中心，半径y1的圈内，随机生成k个小陨石，每个小陨石下落后造成半径y2的范围伤害，数值为攻击力*（技能强度-1）
+4. 蚀骨冰刺：攻击时，有20%概率，以宠物为中心，向前方角度为60度，半径为z的扇形，造成数值为攻击力*（技能强度-1）的范围伤害
+
+其中，x,y,z,k等加入GameConfig进行设置，以战宠的半径为基准单位。暂定x=2.5，y1=6,y2=1,z=3.5,k=5
+
+
+1. 同样，0级的时候不显示图标，但是占位
+2. 任意战宠触发了对应技能的时候，快速闪金一下

@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 技能管理类：负责技能的加载、等级管理和升级逻辑
  * 实现方法参考 PetCollection.js，支持金币升级和广告升级
@@ -8,6 +10,19 @@ export class SkillManager {
     this.ownedSkills = []; // Array of { baseName, level }
     this.upgradeConfigs = new Map(); // originalKey -> Map(level -> config)
     this.skillMetadata = new Map(); // baseName -> { type, originalKey }
+
+    this.load();
+  }
+
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_skill_data');
+    if (saved) {
+      this.ownedSkills = JSON.parse(saved);
+    }
+  }
+
+  save() {
+    GameConfig.setStorageItem('taoist_skill_data', JSON.stringify(this.ownedSkills));
   }
 
   /**
@@ -133,6 +148,7 @@ export class SkillManager {
 
     if (isSuccess) {
       skillState.level++;
+      this.save();
       return { success: true, newLevel: skillState.level };
     } else {
       return { success: false, reason: "升级失败" };

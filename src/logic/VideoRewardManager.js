@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 视频奖励管理类：负责管理每日视频升级次数 (原 AdManager，避开广告拦截器)
  */
@@ -7,14 +9,16 @@ export class VideoRewardManager {
       'pet': 10,
       'cultivation': 5,
       'aura': 5,
-      'skill': 10
+      'skill': 10,
+      'mana': 99
     };
     
     this.counts = {
       'pet': 0,
       'cultivation': 0,
       'aura': 0,
-      'skill': 0
+      'skill': 0,
+      'mana': 0
     };
     
     this.lastResetDate = '';
@@ -23,7 +27,7 @@ export class VideoRewardManager {
   }
 
   load() {
-    const saved = localStorage.getItem('taoist_video_data');
+    const saved = GameConfig.getStorageItem('taoist_video_data');
     if (saved) {
       const data = JSON.parse(saved);
       // 合并旧数据，确保新增加的分类 (如 aura) 即使在旧存档中不存在也能初始化为 0
@@ -37,7 +41,7 @@ export class VideoRewardManager {
       this.lastResetDate = data.lastResetDate || '';
     } else {
       // 尝试兼容旧的 ad_data 键名
-      const oldSaved = localStorage.getItem('taoist_ad_data');
+      const oldSaved = GameConfig.getStorageItem('taoist_ad_data');
       if (oldSaved) {
         const data = JSON.parse(oldSaved);
         this.counts = data.counts || this.counts;
@@ -47,7 +51,7 @@ export class VideoRewardManager {
   }
 
   save() {
-    localStorage.setItem('taoist_video_data', JSON.stringify({
+    GameConfig.setStorageItem('taoist_video_data', JSON.stringify({
       counts: this.counts,
       lastResetDate: this.lastResetDate
     }));
@@ -56,7 +60,7 @@ export class VideoRewardManager {
   checkDailyReset() {
     const today = new Date().toLocaleDateString();
     if (this.lastResetDate !== today) {
-      this.counts = { 'pet': 0, 'cultivation': 0, 'aura': 0, 'skill': 0 };
+      this.counts = { 'pet': 0, 'cultivation': 0, 'aura': 0, 'skill': 0, 'mana': 0 };
       this.lastResetDate = today;
       this.save();
     }

@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Taoist Legend Game</title>
-    <link rel="stylesheet" href="/style.css" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
   </head>
   <body>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
+          navigator.serviceWorker.register('sw.js').then(reg => {
             console.log('SW registered:', reg);
           }).catch(err => {
             console.log('SW registration failed:', err);
@@ -44,7 +44,12 @@
         <div class="col-left">
           <div class="entry-btn" id="desktop-entry-btn"><span>添加桌面</span></div>
           <div class="entry-btn" id="online-reward-btn"><span>在线奖励</span></div>
-          <div class="entry-btn" id="story-btn"><span>守护沙城</span></div>
+          <div class="entry-btn" id="story-btn">
+            <div class="btn-content">
+              <span>守护沙城</span>
+              <span class="story-time-small">0d 00:00</span>
+            </div>
+          </div>
           <div class="entry-btn"><span>神器</span></div>
           <div class="entry-btn hammer" id="afk-reward-btn">
             <div class="btn-content">
@@ -70,7 +75,12 @@
             <div class="level-badge-diamond"><span>0</span></div>
           </div>
           <div class="buff-btn" id="mana-refill-btn">补充法力</div>
-          <div class="buff-btn" id="auto-strike-btn">自动出击</div>
+          <div class="buff-btn" id="auto-strike-btn">
+            <div class="btn-content">
+              <span>自动出击</span>
+              <span class="auto-strike-time-small hidden">00:00</span>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -84,7 +94,7 @@
           </div>
           <div class="stat-item">
             <span class="mini-label">法力</span>
-            <div class="progress-bg mini"><div class="fill blue" style="width: 100%"></div><span class="val">54.0/54.0</span></div>
+            <div class="progress-bg mini"><div class="fill blue" style="width: 100%"></div><span class="val">20.0/20.0</span></div>
           </div>
         </div>
 
@@ -130,15 +140,27 @@
         <!-- 技能框 (对称放置) -->
         <div class="skill-slots-bottom">
           <!-- 第一行：主动技能 -->
-          <div class="skill-slot"><span>群体<br/>狂暴</span></div>
-          <div class="skill-slot"><span>毒素<br/>注入</span></div>
-          <div class="skill-slot"><span>天降<br/>甘霖</span></div>
-          <div class="skill-slot"><span>神圣<br/>战甲</span></div>
+          <div class="skill-slot active-skill" data-skill="群体狂暴">
+            <span>群体<br/>狂暴</span>
+            <div class="cd-overlay"></div>
+          </div>
+          <div class="skill-slot active-skill" data-skill="毒素注入">
+            <span>毒素<br/>注入</span>
+            <div class="cd-overlay"></div>
+          </div>
+          <div class="skill-slot active-skill" data-skill="天降甘霖">
+            <span>天降<br/>甘霖</span>
+            <div class="cd-overlay"></div>
+          </div>
+          <div class="skill-slot active-skill" data-skill="神圣战甲">
+            <span>神圣<br/>战甲</span>
+            <div class="cd-overlay"></div>
+          </div>
           <!-- 第二行：被动技能 -->
-          <div class="skill-slot"><span>战争<br/>践踏</span></div>
-          <div class="skill-slot"><span>飓风<br/>之息</span></div>
-          <div class="skill-slot"><span>流星<br/>火雨</span></div>
-          <div class="skill-slot"><span>蚀骨<br/>冰刺</span></div>
+          <div class="skill-slot passive-skill" data-skill="战争践踏"><span>战争<br/>践踏</span></div>
+          <div class="skill-slot passive-skill" data-skill="飓风之息"><span>飓风<br/>之息</span></div>
+          <div class="skill-slot passive-skill" data-skill="流星火雨"><span>流星<br/>火雨</span></div>
+          <div class="skill-slot passive-skill" data-skill="蚀骨冰刺"><span>蚀骨<br/>冰刺</span></div>
         </div>
         
         <nav class="nav-bar">
@@ -264,6 +286,7 @@
               
               <p class="highlight-hint">点击获取即可开启自动攻击</p>
               <p class="duration-text">20min内有效</p>
+              <p class="auto-strike-modal-timer hidden">剩余时间: 00:00</p>
               
               <div class="bonus-footer">
                 <button class="modal-action-btn close-action-btn">关闭</button>
@@ -483,7 +506,31 @@
 
       <!-- 设置界面 -->
       <div id="settings-modal" class="modal-overlay hidden">
-        ...
+        <div class="modal-content settings-panel">
+          <header class="modal-header">
+            <h2>游戏设置</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <div class="settings-container">
+              <div class="setting-row">
+                <span class="setting-label">音效</span>
+                <div class="custom-checkbox checked" id="setting-sound"></div>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label">音乐</span>
+                <div class="custom-checkbox checked" id="setting-music"></div>
+              </div>
+
+              <!-- 分割线与版本信息 -->
+              <div class="settings-divider">
+                <span class="divider-text">版本信息</span>
+              </div>
+              
+              <div class="version-text">当前版本: v1.0.4</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 主线剧情/守护沙城界面 -->
@@ -579,6 +626,6 @@
       </div>
     </div>
 
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="main.js"></script>
   </body>
 </html>

@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 货币管理类：负责金币等资源的逻辑计算
  */
@@ -23,6 +25,30 @@ export class CurrencyManager {
     this.goldMultiplier = 1.0; // 金币加成 (来自 StatManager)
     this.passiveGoldMultiplier = 1.0; // 来自修炼系统的被动加成
     this.recoveryAccumulator = 0; // 毫秒累积器，用于处理 dt 恢复 (基于真实时间)
+
+    this.load();
+  }
+
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_currency_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      this.gold = data.gold || 0;
+      this.ingot = data.ingot || 0;
+      this.lingfu = data.lingfu || 0;
+      this.essence = data.essence !== undefined ? data.essence : 15;
+      this.lastRecoveryTime = data.lastRecoveryTime || Date.now();
+    }
+  }
+
+  save() {
+    GameConfig.setStorageItem('taoist_currency_data', JSON.stringify({
+      gold: this.gold,
+      ingot: this.ingot,
+      lingfu: this.lingfu,
+      essence: this.essence,
+      lastRecoveryTime: this.lastRecoveryTime
+    }));
   }
 
   setGoldMultiplier(multiplier) {
@@ -62,6 +88,7 @@ export class CurrencyManager {
       this.recoveryAccumulator %= this.recoveryInterval;
       this.lastRecoveryTime = Date.now();
       
+      this.save();
       this._notifyEssenceUpdate(this.getTimeToNext());
     } else {
       const remain = this.getTimeToNext();
@@ -137,6 +164,7 @@ export class CurrencyManager {
       if (this.onEssenceUpdate) {
         this.onEssenceUpdate(this.essence, this.getTimeToNext());
       }
+      this.save();
       return true;
     }
     return false;
@@ -157,6 +185,7 @@ export class CurrencyManager {
     if (this.onUpdate) {
       this.onUpdate(this.gold);
     }
+    this.save();
   }
 
   /**
@@ -168,6 +197,7 @@ export class CurrencyManager {
       if (this.onUpdate) {
         this.onUpdate(this.gold);
       }
+      this.save();
       return true;
     }
     return false;
@@ -186,6 +216,7 @@ export class CurrencyManager {
     if (this.onIngotUpdate) {
       this.onIngotUpdate(this.ingot);
     }
+    this.save();
   }
 
   /**
@@ -197,6 +228,7 @@ export class CurrencyManager {
       if (this.onIngotUpdate) {
         this.onIngotUpdate(this.ingot);
       }
+      this.save();
       return true;
     }
     return false;
@@ -215,6 +247,7 @@ export class CurrencyManager {
     if (this.onLingfuUpdate) {
       this.onLingfuUpdate(this.lingfu);
     }
+    this.save();
   }
 
   /**
@@ -226,6 +259,7 @@ export class CurrencyManager {
       if (this.onLingfuUpdate) {
         this.onLingfuUpdate(this.lingfu);
       }
+      this.save();
       return true;
     }
     return false;
