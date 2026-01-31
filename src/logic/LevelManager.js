@@ -63,7 +63,7 @@ export class LevelManager {
    */
   async loadLevelData() {
     try {
-      const response = await fetch('/data/levels.csv');
+      const response = await fetch('./public/data/levels.csv');
       const csvText = await response.text();
       const lines = csvText.split('\n');
       

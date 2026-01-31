@@ -27,7 +27,7 @@ export class StoryManager {
    */
   async loadStories() {
     try {
-      const response = await fetch('/data/stories.json');
+      const response = await fetch('./public/data/stories.json');
       this.stories = await response.json();
       
       // 等待 petCollection 加载完配置后计算最大阶级
