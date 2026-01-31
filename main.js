@@ -1515,6 +1515,22 @@ if (settingsModal) {
         if (settingId === 'setting-music') {
           audioManager.setMusicEnabled(isChecked);
         }
+
+        // 联动全屏开关
+        if (settingId === 'setting-fullscreen') {
+          if (isChecked) {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch(err => {
+                console.error(`无法进入全屏: ${err.message}`);
+                checkbox.classList.remove('checked');
+              });
+            }
+          } else {
+            if (document.fullscreenElement) {
+              document.exitFullscreen();
+            }
+          }
+        }
         
         // 点击复选框也播放音效
         audioManager.playClick();
@@ -1522,6 +1538,18 @@ if (settingsModal) {
     });
   }
 }
+
+// 监听全屏变化事件，确保 UI 状态同步
+document.addEventListener('fullscreenchange', () => {
+  const fullscreenCheckbox = document.getElementById('setting-fullscreen');
+  if (fullscreenCheckbox) {
+    if (document.fullscreenElement) {
+      fullscreenCheckbox.classList.add('checked');
+    } else {
+      fullscreenCheckbox.classList.remove('checked');
+    }
+  }
+});
 
 // 在线奖励面板内容逻辑
 if (onlineModal) {

@@ -73,6 +73,7 @@ export class AddDesktopManager {
       console.log(`PWA: User choice: ${outcome}`);
       
       if (outcome === 'accepted') {
+        this.isInstalled = true;
         this.deferredPrompt = null;
         return { success: true, type: 'prompt' };
       }

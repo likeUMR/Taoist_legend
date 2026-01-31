@@ -153,10 +153,12 @@ export class DOMRenderer {
         this.container.appendChild(el);
         this.elementMap.set(entity.id, el);
 
-        // 为新实体绑定伤害监听
-        entity.onDamage = (amount) => {
-          this.createDamageText(entity.x, entity.y, amount);
-        };
+        // 为新实体绑定伤害监听 (仅限敌人显示飘字，战宠受伤不显示)
+        if (entity.side === 'enemy') {
+          entity.onDamage = (amount) => {
+            this.createDamageText(entity.x, entity.y, amount);
+          };
+        }
       }
 
       if (entity.isDead) {
