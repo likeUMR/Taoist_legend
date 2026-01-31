@@ -28,6 +28,7 @@ export class LevelManager {
     this.isTrialMode = false;
     this.trialConfig = null;
     this.trialCallback = null; // 试炼结束回调 (success) => {}
+    this.onManualExit = null; // 主动退出试炼的回调
 
     this.initEvents();
   }
@@ -39,6 +40,11 @@ export class LevelManager {
     if (this.retryBtn) {
       this.retryBtn.addEventListener('click', () => {
         if (!this.isTransitioning) {
+          if (this.isTrialMode) {
+            console.log('【系统】主动退出试炼...');
+            if (this.onManualExit) this.onManualExit();
+            return;
+          }
           console.log(`【系统】挑战最高层级: 第 ${this.lastFailedLevel} 层...`);
           const targetLevel = this.lastFailedLevel;
           this.lastFailedLevel = -1; // 点击后重置失败记录，恢复晋级模式
@@ -88,7 +94,7 @@ export class LevelManager {
   /**
    * 加载指定关卡
    */
-  loadLevel(level) {
+  loadLevel(level, trialInfo = null) {
     this.currentLevel = level;
     this.isTransitioning = false;
     
@@ -103,15 +109,33 @@ export class LevelManager {
 
     // 2. 更新 UI
     if (this.uiElement) {
-      this.uiElement.textContent = `第${this.currentLevel}层`;
+      if (this.isTrialMode && trialInfo) {
+        this.uiElement.textContent = trialInfo.text;
+        this.uiElement.classList.add('trial-mode');
+        // 移除旧的试炼类型类
+        this.uiElement.classList.remove('trial-retry', 'trial-speed', 'trial-mana');
+        // 添加当前试炼类型类
+        if (trialInfo.type) {
+          this.uiElement.classList.add(`trial-${trialInfo.type}`);
+        }
+      } else {
+        this.uiElement.textContent = `第${this.currentLevel}层`;
+        this.uiElement.classList.remove('trial-mode', 'trial-retry', 'trial-speed', 'trial-mana');
+      }
     }
     
     // 根据当前层级与最后失败层级的关系决定按钮显示
     if (this.retryBtn) {
-      if (this.lastFailedLevel !== -1 && this.currentLevel < this.lastFailedLevel) {
+      if (this.isTrialMode) {
+        this.retryBtn.textContent = '退出试炼';
         this.retryBtn.style.visibility = 'visible';
       } else {
-        this.retryBtn.style.visibility = 'hidden';
+        this.retryBtn.textContent = '再次挑战';
+        if (this.lastFailedLevel !== -1 && this.currentLevel < this.lastFailedLevel) {
+          this.retryBtn.style.visibility = 'visible';
+        } else {
+          this.retryBtn.style.visibility = 'hidden';
+        }
       }
     }
 
@@ -131,9 +155,6 @@ export class LevelManager {
       config = this.trialConfig;
       enemyCount = 3; // 试炼关卡固定 3 个敌人，或者根据需要调整
       totalHp = config.hp;
-      if (this.uiElement) {
-        this.uiElement.textContent = `试炼中`;
-      }
     } else {
       // 读取正常关卡数据
       config = this.levelDataMap.get(level) || { atk: 5, hp: 50, rewardGold: 10 };
@@ -161,11 +182,11 @@ export class LevelManager {
   /**
    * 进入试炼模式
    */
-  enterTrialMode(config, callback) {
+  enterTrialMode(config, callback, trialInfo = null) {
     this.isTrialMode = true;
     this.trialConfig = config;
     this.trialCallback = callback;
-    this.loadLevel(this.currentLevel); // 重新加载当前层，但会因为 isTrialMode 走试炼逻辑
+    this.loadLevel(this.currentLevel, trialInfo); // 重新加载当前层，但会因为 isTrialMode 走试炼逻辑
   }
 
   /**

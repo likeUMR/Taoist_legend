@@ -17,7 +17,21 @@ export class SkillManager {
   load() {
     const saved = GameConfig.getStorageItem('taoist_skill_data');
     if (saved) {
-      this.ownedSkills = JSON.parse(saved);
+      try {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data)) {
+          // 移除可能的重复项
+          const seen = new Set();
+          this.ownedSkills = data.filter(item => {
+            if (seen.has(item.baseName)) return false;
+            seen.add(item.baseName);
+            return true;
+          });
+        }
+      } catch (e) {
+        console.error('Failed to parse skill data', e);
+        this.ownedSkills = [];
+      }
     }
   }
 
@@ -77,10 +91,24 @@ export class SkillManager {
               type: '被动技能', 
               originalKey: warStompMeta.originalKey 
             });
+          }
+          // 确保 ownedSkills 中不重复添加
+          if (!this.ownedSkills.some(s => s.baseName === name)) {
             this.ownedSkills.push({ baseName: name, level: 0 });
           }
         });
       }
+
+      // 最终去重检查，确保 ownedSkills 中没有重复的 baseName
+      const uniqueOwned = [];
+      const seenNames = new Set();
+      for (const skill of this.ownedSkills) {
+        if (!seenNames.has(skill.baseName)) {
+          seenNames.add(skill.baseName);
+          uniqueOwned.push(skill);
+        }
+      }
+      this.ownedSkills = uniqueOwned;
 
       console.log(`【系统】技能系统初始化完成，共加载 ${this.skillMetadata.size} 个技能`);
     } catch (err) {

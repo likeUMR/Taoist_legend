@@ -31,16 +31,17 @@ export class PetCollection {
   }
 
   /**
-   * 初始化：加载升级配置表
+   * 初始化：加载升级配置表和解锁配置
    */
   async init() {
     try {
-      const response = await fetch('./data/upgrades.csv');
-      const csvText = await response.text();
-      const lines = csvText.split('\n');
+      // 1. 加载升级配置
+      const upgradesResponse = await fetch('./data/upgrades.csv');
+      const upgradesText = await upgradesResponse.text();
+      const upgradeLines = upgradesText.split('\n');
       
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
+      for (let i = 1; i < upgradeLines.length; i++) {
+        const line = upgradeLines[i].trim();
         if (!line) continue;
         
         const [system, level, attr, atkMult, hpMult, costGold, costStamina, rate, isBreak] = line.split(',');
@@ -51,14 +52,51 @@ export class PetCollection {
             hpMult: parseFloat(hpMult),
             costGold: parseFloat(costGold),
             costStamina: parseFloat(costStamina),
-            successRate: parseFloat(rate) / 100, // "100%" -> 1.0
+            successRate: parseFloat(rate) / 100,
             isBreakthrough: isBreak.toLowerCase() === 'true'
           });
         }
       }
-      console.log(`【系统】成功加载 ${this.upgradeConfigs.size} 条战宠升级数据`);
+
+      // 2. 加载关卡奖励数据 (用于计算解锁费用)
+      const levelsResponse = await fetch('./data/levels.csv');
+      const levelsText = await levelsResponse.text();
+      const levelLines = levelsText.split('\n');
+      const levelRewards = new Map();
+      for (let i = 1; i < levelLines.length; i++) {
+        const line = levelLines[i].trim();
+        if (!line) continue;
+        const [level, atk, hp, reward] = line.split(',');
+        levelRewards.set(parseInt(level), parseFloat(reward));
+      }
+
+      // 3. 加载解锁配置并更新 PET_CONFIGS 的解锁费用
+      const unlocksResponse = await fetch('./data/unlocks.csv');
+      const unlocksText = await unlocksResponse.text();
+      const unlockLines = unlocksText.split('\n');
+      
+      for (let i = 1; i < unlockLines.length; i++) {
+        const line = unlockLines[i].trim();
+        if (!line) continue;
+        
+        const [source, unlockTime, unlockLevel] = line.split(',');
+        const levelNum = parseInt(unlockLevel);
+        const reward = levelRewards.get(levelNum) || 0;
+        
+        // 匹配 强化_v1, 强化_v2 ... 对应 PET_CONFIGS[0], PET_CONFIGS[1] ...
+        const match = source.match(/强化_v(\d+)/);
+        if (match) {
+          const index = parseInt(match[1]) - 1;
+          if (PET_CONFIGS[index]) {
+            // 第一个战宠解锁费用为 0 (初始解锁)，后续为 3 倍关卡收益
+            PET_CONFIGS[index].unlockCost = index === 0 ? 0 : Math.floor(reward * 3);
+          }
+        }
+      }
+
+      console.log(`【系统】成功加载战宠系统配置，共 ${this.upgradeConfigs.size} 条升级数据`);
     } catch (err) {
-      console.error('【系统】加载升级数据失败:', err);
+      console.error('【系统】加载战宠配置数据失败:', err);
     }
   }
 

@@ -176,11 +176,19 @@ export class TrialManager {
     this.normalLevelBackup = this.levelManager.currentLevel;
     this.currentTrial = { type, index };
     
+    // 绑定手动退出回调
+    this.levelManager.onManualExit = () => {
+      this.onTrialComplete(false); // 手动退出视为失败
+    };
+
     // 切换 LevelManager 到试炼模式
     const config = levels[index];
+    const trialTypeName = type === 'retry' ? '强运' : (type === 'speed' ? '速度' : '法力');
+    const trialInfo = `${trialTypeName}试炼 ${index + 1}`;
+    
     this.levelManager.enterTrialMode(config, (success) => {
       this.onTrialComplete(success);
-    });
+    }, { text: trialInfo, type });
 
     return true;
   }
@@ -190,6 +198,11 @@ export class TrialManager {
    */
   onTrialComplete(success) {
     if (!this.currentTrial) return;
+
+    // 清理手动退出回调
+    if (this.levelManager) {
+      this.levelManager.onManualExit = null;
+    }
 
     const { type, index } = this.currentTrial;
     
@@ -208,12 +221,37 @@ export class TrialManager {
       }
       this.saveProgress();
       
-      // TODO: 这里将来可以处理通关奖励
+      // 自动开启下一场试炼
+      const nextIndex = index + 1;
+      const levels = type === 'retry' ? this.retryLevels : (type === 'speed' ? this.speedLevels : this.manaLevels);
+      
+      if (nextIndex < levels.length) {
+        console.log(`【系统】自动开启下一场试炼: ${type} - ${nextIndex + 1}/${levels.length}`);
+        // 延迟一小段时间开启，让玩家看清结算
+        setTimeout(() => {
+          this.currentTrial = { type, index: nextIndex };
+          const config = levels[nextIndex];
+          const trialTypeName = type === 'retry' ? '强运' : (type === 'speed' ? '速度' : '法力');
+          const trialInfo = `${trialTypeName}试炼 ${nextIndex + 1}`;
+          
+          // 重新绑定手动退出回调
+          this.levelManager.onManualExit = () => {
+            this.onTrialComplete(false);
+          };
+
+          this.levelManager.enterTrialMode(config, (nextSuccess) => {
+            this.onTrialComplete(nextSuccess);
+          }, { text: trialInfo, type });
+          // 触发 UI 刷新 (确保进度更新显示)
+          if (this.onUpdateUI) this.onUpdateUI();
+        }, 1500);
+        return; // 暂不退出试炼模式
+      }
     } else {
       console.log(`【系统】试炼挑战失败！`);
     }
 
-    // 无论胜负，回到原有关卡
+    // 无论胜负（或者已经没有下一关），回到原有关卡
     this.currentTrial = null;
     this.levelManager.exitTrialMode(this.normalLevelBackup);
     

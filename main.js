@@ -69,6 +69,7 @@ const SKINS = SKIN_NAMES.map((name, index) => {
 });
 
 let currentSkin = '狗'; // 初始皮肤
+let viewingSkinName = null; // 当前正在查看详情的皮肤
 window.currentSkin = currentSkin; // 暴露给渲染器
 
 /**
@@ -681,6 +682,24 @@ function openSkinModal() {
   skinModal.classList.remove('hidden');
   
   updateSkinBonusUI(); // 更新总加成显示
+  
+  // 详情改为悬浮窗，初始不显示
+  const detailArea = document.getElementById('selected-skin-detail');
+  if (detailArea) {
+    detailArea.classList.add('hidden');
+    // 点击背景关闭
+    detailArea.onclick = (e) => {
+      if (e.target === detailArea) {
+        detailArea.classList.add('hidden');
+      }
+    };
+    // 同时也支持内部卡片的点击不穿透到背景
+    const detailCard = detailArea.querySelector('.detail-card');
+    if (detailCard) {
+      detailCard.onclick = (e) => e.stopPropagation();
+    }
+  }
+  
   renderSkinList(); // 渲染皮肤列表
   
   const scrollView = skinModal.querySelector('.pet-scroll-view');
@@ -707,13 +726,14 @@ function renderSkinList() {
 
   const html = SKINS.map((skin, index) => {
     const isCurrent = skin.name === currentSkin;
+    const isViewing = skin.name === (viewingSkinName || currentSkin);
     const gradeClass = `grade-${skin.grade.toLowerCase()}`;
     const displayName = skin.unlocked ? skin.name : '???';
     const displayIcon = skin.unlocked ? skin.name : '?';
     const circleClass = skin.unlocked ? 'blue' : 'gray';
     
     return `
-      <div class="skin-item ${isCurrent ? 'active' : ''} ${skin.unlocked ? '' : 'locked'}" data-skin="${skin.name}">
+      <div class="skin-item ${isCurrent ? 'active' : ''} ${isViewing ? 'viewing' : ''} ${skin.unlocked ? '' : 'locked'}" data-skin="${skin.name}">
         <div class="skin-card ${gradeClass}">
           <div class="skin-pet-icon">
             <div class="pet-icon-circle ${circleClass}">${displayIcon}</div>
@@ -742,11 +762,68 @@ function renderSkinList() {
       audioManager.playClick();
       const skinName = item.dataset.skin;
       const skin = SKINS.find(s => s.name === skinName);
+      
+      // 更新正在查看的皮肤
+      viewingSkinName = skinName;
+      renderSkinDetail(skinName);
+      
+      // 重新渲染列表以更新选中效果 (viewing class)
+      renderSkinList();
+
       if (skin && skin.unlocked) {
         changePetSkin(skinName);
       }
     });
   });
+}
+
+/**
+ * 渲染单个皮肤的详细属性
+ */
+function renderSkinDetail(skinName) {
+  const detailArea = document.getElementById('selected-skin-detail');
+  if (!detailArea) return;
+
+  const skin = SKINS.find(s => s.name === skinName);
+  if (!skin) {
+    detailArea.classList.add('hidden');
+    return;
+  }
+
+  detailArea.classList.remove('hidden');
+
+  // 更新图标和基本信息
+  const iconCircle = detailArea.querySelector('.pet-icon-circle');
+  const nameEl = detailArea.querySelector('.detail-name');
+  const gradeBadge = detailArea.querySelector('.detail-grade-badge');
+  const descEl = detailArea.querySelector('.detail-desc');
+
+  if (skin.unlocked) {
+    iconCircle.textContent = skin.name;
+    iconCircle.className = 'pet-icon-circle blue';
+    nameEl.textContent = skin.name;
+    descEl.textContent = `该皮肤已解锁，属性加成已永久生效`;
+  } else {
+    iconCircle.textContent = '?';
+    iconCircle.className = 'pet-icon-circle gray';
+    nameEl.textContent = '未解锁';
+    descEl.textContent = `解锁后可获得下方属性加成`;
+  }
+
+  gradeBadge.textContent = `${skin.grade}级`;
+  gradeBadge.className = `detail-grade-badge grade-${skin.grade.toLowerCase()}`;
+
+  // 更新属性列表
+  const bonusItems = detailArea.querySelectorAll('.detail-bonus-grid .bonus-item .bonus-val');
+  if (bonusItems.length >= 6) {
+    const b = skin.bonuses;
+    bonusItems[0].textContent = `+${(b.hp * 0.5).toFixed(1)}%`;
+    bonusItems[1].textContent = `+${(b.atk * 0.3).toFixed(1)}%`;
+    bonusItems[2].textContent = `+${(b.critRate * 0.5).toFixed(1)}%`;
+    bonusItems[3].textContent = `+${(b.critDmg * 1).toFixed(1)}%`;
+    bonusItems[4].textContent = `+${(b.dodge * 0.3).toFixed(1)}%`;
+    bonusItems[5].textContent = `+${(b.combo * 0.2).toFixed(1)}%`;
+  }
 }
 
 /**
@@ -798,6 +875,8 @@ function unlockRandomSkin(grade) {
 
   // 如果皮肤界面打开着，刷新它
   if (!skinModal.classList.contains('hidden')) {
+    viewingSkinName = selectedSkin.name;
+    renderSkinDetail(viewingSkinName);
     renderSkinList();
     updateSkinBonusUI();
   }
