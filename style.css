@@ -1,3 +1,116 @@
+/* 开始界面样式 */
+.start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--game-white);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.start-screen.fade-out {
+  opacity: 0;
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+.start-content {
+  text-align: center;
+  position: relative;
+  width: 80%;
+}
+
+.start-bg-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 300px;
+  color: rgba(0, 0, 0, 0.03);
+  z-index: -1;
+  animation: rotate-slow 20s linear infinite;
+}
+
+@keyframes rotate-slow {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.start-title {
+  font-size: 64px;
+  color: #000;
+  margin-bottom: 60px;
+  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+  letter-spacing: 8px;
+}
+
+.loading-container {
+  margin-bottom: 40px;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.loading-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border: 2px solid #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.loading-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--yellow);
+  transition: width 0.3s ease;
+}
+
+.start-btn {
+  background: var(--yellow);
+  border: 2px solid #000;
+  border-bottom: 6px solid #000;
+  border-radius: 8px;
+  padding: 12px 40px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.5s;
+  animation: breath 2s infinite ease-in-out;
+}
+
+.start-btn:active {
+  transform: translateY(4px);
+  border-bottom-width: 2px;
+}
+
+.start-btn.hidden {
+  display: none;
+}
+
+@keyframes breath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.start-footer {
+  position: absolute;
+  bottom: -100px;
+  width: 100%;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 之前存在的样式... */
 :root {
   --bg-black: #000;
   --game-white: #f3f4f6;
@@ -20,6 +133,8 @@ body {
   min-height: 100vh;
   font-family: sans-serif;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #game-container {
@@ -61,7 +176,7 @@ body {
   white-space: nowrap;
 }
 
-.icon { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+.icon { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid #000; vertical-align: middle; }
 .coin { background: var(--yellow); }
 .ingot { background: #fbbf24; }
 .stone { background: #f59e0b; }
@@ -149,7 +264,9 @@ body {
 
 .afk-time-small,
 .auto-strike-time-small,
-.story-time-small {
+.story-time-small,
+.online-time-small,
+.skin-progress-small {
   font-size: 10px;
   color: #f97316;
   font-weight: bold;
@@ -606,6 +723,38 @@ body {
   padding: 20px 0;
 }
 
+/* 伤害飘字样式 */
+.damage-text {
+  position: absolute;
+  pointer-events: none;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 
+    -1px -1px 0 #000,  
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000;
+  z-index: 2000;
+  animation: damage-float 0.8s ease-out forwards;
+  white-space: nowrap;
+}
+
+@keyframes damage-float {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -20px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -60px) scale(1);
+    opacity: 0;
+  }
+}
+
 .meditation-wrap {
   position: relative;
   width: 100%;
@@ -857,6 +1006,72 @@ body {
   transform: scale(0.9);
 }
 
+/* 皮肤图鉴界面页脚 */
+.skin-footer {
+  padding: 10px 15px;
+  border-top: 2px solid #000;
+  display: flex;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.skin-draw-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.skin-draw-odds {
+  font-size: 12px;
+  color: #000;
+  font-weight: bold;
+  margin-top: 6px;
+  background: #e2e8f0;
+  padding: 4px 12px;
+  border: 1px solid #000;
+  border-radius: 4px;
+}
+
+.skin-draw-btn {
+  background: #f97316;
+  color: #fff;
+  border: 3px solid #000;
+  padding: 10px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #000;
+  transition: all 0.2s ease;
+}
+
+.skin-draw-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.draw-btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.draw-btn-content .btn-text {
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.draw-cost {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  background: rgba(0,0,0,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
 /* 动态战斗对象样式 */
 .combat-entity {
   position: absolute;
@@ -973,7 +1188,8 @@ body {
 
 .modal-content {
   width: 90%;
-  height: 800px; /* 固定高度 */
+  height: 90%;
+  max-height: 850px;
   background: var(--game-white);
   border: 4px solid #000;
   border-radius: 12px;
@@ -1119,6 +1335,31 @@ body {
   border-radius: 8px;
   padding: 10px;
   box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  cursor: grab;
+}
+
+.pet-item:active {
+  cursor: grabbing;
+}
+
+/* 确保拖拽项目内部非按钮区域不拦截拖拽事件 */
+.pet-item .pet-icon-wrap,
+.pet-item .pet-icon-wrap *,
+.pet-item .pet-info,
+.pet-item .pet-info *,
+.pet-item .pet-action .claimed-text,
+.cultivation-item .cult-icon-box,
+.cultivation-item .cult-icon-box *,
+.cultivation-item .cult-info,
+.cultivation-item .cult-info * {
+  pointer-events: none;
+}
+
+.pet-item button,
+.pet-item button *,
+.cultivation-item button,
+.cultivation-item button * {
+  pointer-events: auto;
 }
 
 .pet-item.locked {
@@ -1697,6 +1938,17 @@ body {
   transform: translateY(3px);
 }
 
+/* 试炼分页切换样式 */
+.trial-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.trial-page.hidden {
+  display: none;
+}
+
 .adventure-tabs {
   position: absolute;
   bottom: 0;
@@ -1710,6 +1962,7 @@ body {
   align-items: center;
   padding: 0 10px;
   border-radius: 0 0 8px 8px;
+  z-index: 20;
 }
 
 .adv-tab {
@@ -1742,6 +1995,57 @@ body {
   background: var(--red);
   border: 2px solid #fff;
   border-radius: 50%;
+}
+
+/* 试炼关卡特殊样式 */
+.adventure-item.locked {
+  opacity: 0.6;
+  filter: grayscale(0.8);
+}
+
+.adventure-item.completed {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.adventure-item .status-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.adventure-item.completed .status-tag {
+  background: #4caf50;
+  color: white;
+}
+
+.status-tag.check-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.adventure-item.locked .status-tag {
+  background: #999;
+  color: white;
+}
+
+.adv-challenge-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.adv-reward-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,0,0,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
 }
 
 /* --- 设置面板特定样式 --- */
@@ -1946,6 +2250,216 @@ body {
 .afk-panel {
   height: auto;
   max-height: 85%;
+}
+
+/* --- 皮肤图鉴面板样式 --- */
+.skin-panel {
+  background: #f3f4f6;
+}
+
+.skin-bonus-section {
+  background: #fff;
+  padding: 8px 15px; /* 压缩上下内边距 */
+  border-bottom: 2px solid #000;
+  display: block;
+}
+
+.skin-bonus-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 6px; /* 压缩标题下方间距 */
+  color: #000;
+  text-align: left;
+}
+
+.skin-bonus-grid {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 6px 0; /* 进一步压缩行间距 */
+}
+
+.bonus-item {
+  width: 33.33%; 
+  display: flex;
+  flex-direction: row; /* 左右结构 */
+  align-items: center;
+  justify-content: flex-start; /* 左对齐 */
+  box-sizing: border-box;
+}
+
+.bonus-item span:first-child {
+  font-size: 12px;
+  color: #000; /* 改为黑色 */
+  margin-bottom: 0;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.bonus-val {
+  color: #10b981 !important;
+  font-size: 13px !important; /* 稍微减小字体以适应一行显示 */
+  font-weight: bold !important;
+  position: static !important;
+  display: inline-block !important; /* 改为行内块 */
+  text-align: left !important;
+  text-shadow: none !important;
+  width: auto !important;
+  line-height: 1.2 !important;
+  margin-left: 4px; /* 与文字保持间距 */
+}
+
+.skin-status-header {
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: bold;
+  background: #e5e7eb;
+  border-bottom: 2px solid #000;
+}
+
+/* 皮肤卡片档次背景色 */
+.skin-card.grade-c { background: #f0f0f0; border: 1px solid #ccc; }
+.skin-card.grade-b { background: #e3f2fd; border: 1px solid #90caf9; }
+.skin-card.grade-a { background: #f3e5f5; border: 1px solid #ce93d8; }
+.skin-card.grade-s { background: #fff3e0; border: 1px solid #ffcc80; }
+
+/* 档次角标 */
+.skin-grade-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.grade-c .skin-grade-badge { background: #9e9e9e; }
+.grade-b .skin-grade-badge { background: #2196f3; }
+.grade-a .skin-grade-badge { background: #9c27b0; }
+.grade-s .skin-grade-badge { background: #ff9800; }
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 15px;
+}
+
+.skin-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.skin-card {
+  width: 100%;
+  aspect-ratio: 1 / 1.1; /* 稍微高一点以容纳 No.X */
+  background: #d1d5db;
+  border: 2px solid #000;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.skin-item.active .skin-card {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.skin-equipped-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.pet-icon-placeholder .pet-icon-circle {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+/* 统一战宠渲染器中的图标样式 */
+.pet-icon-wrap .pet-icon-circle {
+  transform: scale(0.9);
+}
+
+.skin-pet-icon {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  width: 100%;
+}
+
+.pet-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  background: #fbbf24; /* 默认黄色 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff; /* 改为白色文字 */
+  text-shadow: 1px 1px 0 #000; /* 添加阴影增强可读性 */
+}
+
+.pet-icon-circle.blue {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.pet-icon-circle.gray {
+  background: #9ca3af;
+  color: #fff;
+}
+
+.skin-no {
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #000;
+  background: #f3f4f6;
+  border-top: 1px solid #000;
+  padding: 2px 0;
+}
+
+.skin-name {
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.skin-item.locked .skin-pet-icon {
+  filter: grayscale(1) opacity(0.6);
+}
+
+.skin-item.locked .skin-name {
+  color: #9ca3af;
 }
 
 .afk-container {

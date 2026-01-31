@@ -1,4 +1,5 @@
 import { formatNumber } from '../utils/format.js';
+import { audioManager } from '../utils/AudioManager.js';
 
 /**
  * 任务 UI 渲染器：负责任务小块的状态显示与交互
@@ -15,6 +16,7 @@ export class TaskUIRenderer {
 
   initEvents() {
     this.container.addEventListener('click', () => {
+      audioManager.playClick();
       const result = this.taskManager.claimReward();
       if (!result.success) {
         // 如果未完成，可以加个抖动效果或者提示

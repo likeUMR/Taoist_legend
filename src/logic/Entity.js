@@ -18,6 +18,12 @@ export class Entity {
     this.lootGold = options.lootGold || 0; // 死亡掉落金币
     this.onDeath = null; // 死亡回调
     this.buffs = []; // 增益/减益效果列表
+
+    // 高级属性 (主要用于战宠)
+    this.critRate = options.critRate || 0;
+    this.critDmg = options.critDmg || 1.5;
+    this.dodge = options.dodge || 0;
+    this.combo = options.combo || 0;
   }
 
   /**
@@ -105,9 +111,17 @@ export class Entity {
   /**
    * 受到伤害
    */
-  takeDamage(amount) {
+  takeDamage(amount, isCrit = false) {
     if (this.isDead) return;
     
+    // 闪避判定
+    if (this.dodge > 0 && Math.random() < this.dodge) {
+      if (this.onDamage) {
+        this.onDamage(0, false, true); // 0 伤害，非暴击，是闪避
+      }
+      return;
+    }
+
     // 防御性检查：防止 NaN 导致锁血
     let damage = parseFloat(amount);
     if (isNaN(damage)) {
@@ -127,6 +141,12 @@ export class Entity {
     }
 
     this.hp -= finalAmount;
+    
+    // 触发受伤回调 (用于飘字等视觉效果)
+    if (this.onDamage) {
+      this.onDamage(finalAmount);
+    }
+
     if (this.hp <= 0) {
       this.hp = 0;
       this.isDead = true;

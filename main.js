@@ -20,6 +20,8 @@ import { VideoRewardManager } from './src/logic/VideoRewardManager.js';
 import { ScrollController } from './src/logic/ScrollController.js';
 import { TaskManager } from './src/logic/TaskManager.js';
 import { TaskUIRenderer } from './src/display/TaskUIRenderer.js';
+import { TrialManager } from './src/logic/TrialManager.js';
+import { TrialUIRenderer } from './src/display/TrialUIRenderer.js';
 import { StatManager } from './src/logic/StatManager.js';
 import { AFKManager } from './src/logic/AFKManager.js';
 import { AFKUIRenderer } from './src/display/AFKUIRenderer.js';
@@ -31,6 +33,91 @@ import { StoryManager } from './src/logic/StoryManager.js';
 import { StoryUIRenderer } from './src/display/StoryUIRenderer.js';
 import { formatNumber } from './src/utils/format.js';
 import { AuraVisualRenderer } from './src/display/AuraVisualRenderer.js';
+import { audioManager } from './src/utils/AudioManager.js';
+import { GameConfig } from './src/logic/GameConfig.js';
+
+// --- 皮肤数据 ---
+const SKIN_NAMES = [
+  '狗', '獒', '狼', '狐', '豺', '豹', '麟', '狮', '虎', '象',
+  '猿', '犼', '貔', '貅', '獬', '豸', '饕', '餮', '穷', '奇',
+  '梼', '杌', '狰', '龙', '凤', '凰', '龟', '蛇', '鹤', '鹏',
+  '蛟', '螭', '虬', '狻', '猊', '狴', '犴', '囚', '牛', '睚'
+];
+
+/**
+ * 初始化皮肤数据，包含档次和属性点分配
+ */
+const SKINS = SKIN_NAMES.map((name, index) => {
+  let grade;
+  if (index < 16) { grade = 'C'; }
+  else if (index < 28) { grade = 'B'; }
+  else if (index < 36) { grade = 'A'; }
+  else { grade = 'S'; }
+
+  const points = GameConfig.SKIN_GRADE_POINTS[grade] || 0;
+
+  // 简单的确定性随机分配点数 (基于索引)
+  const bonuses = { hp: 0, atk: 0, critRate: 0, critDmg: 0, dodge: 0, combo: 0 };
+  const attrKeys = Object.keys(bonuses);
+  
+  for (let i = 0; i < points; i++) {
+    const attrIndex = (index * 7 + i * 3) % attrKeys.length;
+    bonuses[attrKeys[attrIndex]]++;
+  }
+
+  return { name, grade, bonuses, unlocked: name === '狗' }; // 默认仅解锁“狗”
+});
+
+let currentSkin = '狗'; // 初始皮肤
+window.currentSkin = currentSkin; // 暴露给渲染器
+
+/**
+ * 计算所有已解锁皮肤的总加成
+ */
+function calculateSkinBonuses() {
+  const total = {
+    hp: 0, atk: 0, critRate: 0, critDmg: 0, dodge: 0, combo: 0
+  };
+
+  SKINS.forEach(skin => {
+    if (skin.unlocked) {
+      total.hp += skin.bonuses.hp * 0.005;
+      total.atk += skin.bonuses.atk * 0.003;
+      total.critRate += skin.bonuses.critRate * 0.005;
+      total.critDmg += skin.bonuses.critDmg * 0.01;
+      total.dodge += skin.bonuses.dodge * 0.003;
+      total.combo += skin.bonuses.combo * 0.002;
+    }
+  });
+
+  return total;
+}
+
+/**
+ * 更新皮肤界面的属性加成面板
+ */
+function updateSkinBonusUI() {
+  const bonuses = calculateSkinBonuses();
+  const bonusGrid = skinModal.querySelector('.skin-bonus-grid');
+  if (!bonusGrid) return;
+
+  const items = bonusGrid.querySelectorAll('.bonus-item .bonus-val');
+  if (items.length >= 6) {
+    items[0].textContent = `x${(1 + bonuses.hp).toFixed(3)}`;
+    items[1].textContent = `x${(1 + bonuses.atk).toFixed(3)}`;
+    items[2].textContent = `+${(bonuses.critRate * 100).toFixed(1)}%`;
+    items[3].textContent = `+${(bonuses.critDmg * 100).toFixed(1)}%`;
+    items[4].textContent = `+${(bonuses.dodge * 100).toFixed(1)}%`;
+    items[5].textContent = `+${(bonuses.combo * 100).toFixed(1)}%`;
+  }
+
+  // 同时更新解锁进度
+  const unlockedCount = SKINS.filter(s => s.unlocked).length;
+  const statusHeader = skinModal.querySelector('.skin-status-header');
+  if (statusHeader) {
+    statusHeader.textContent = `已解锁：${unlockedCount}/${SKINS.length}`;
+  }
+}
 
 // --- 界面控制逻辑 ---
 const petModal = document.getElementById('pet-modal');
@@ -47,16 +134,17 @@ const onlineModal = document.getElementById('online-modal');
 const adventureModal = document.getElementById('adventure-modal');
 const settingsModal = document.getElementById('settings-modal');
 const storyModal = document.getElementById('story-modal');
+const skinModal = document.getElementById('skin-modal');
 
 // 初始化管理器
-const statManager = new StatManager();
-  window.statManager = statManager; // 暴露给全局，方便其他模块查询状态
 const currencyManager = new CurrencyManager();
 const videoManager = new VideoRewardManager();
 const cultivationManager = new CultivationManager(currencyManager);
 const auraManager = new AuraManager(currencyManager);
 const skillManager = new SkillManager(currencyManager);
-const petCollection = new PetCollection(cultivationManager, auraManager);
+const trialManager = new TrialManager({ levelManager: null, currencyManager }); // 先传 null，后面关联
+const statManager = new StatManager(trialManager);
+const petCollection = new PetCollection(cultivationManager, auraManager, trialManager);
 const engine = new CombatEngine();
 const renderer = new DOMRenderer('battle-wrap');
 const enemyManager = new EnemyManager(engine);
@@ -71,6 +159,17 @@ const taskManager = new TaskManager(currencyManager);
 const taskRenderer = new TaskUIRenderer('.quest-scroll', taskManager);
 const onlineRewardManager = new OnlineRewardManager(currencyManager);
 const onlineRewardRenderer = new OnlineRewardUIRenderer(onlineModal.querySelector('.pet-list-content'), onlineRewardManager);
+
+// 覆写在线奖励渲染器的更新逻辑，增加拖拽保护
+onlineRewardManager.onUpdate = () => {
+  // 如果弹窗没打开，不渲染
+  if (onlineModal.classList.contains('hidden')) return;
+  
+  // 如果正在拖拽，不渲染，避免 DOM 刷新导致拖拽中断
+  if (onlineScrollController && onlineScrollController.isDragging) return;
+  
+  onlineRewardRenderer.render();
+};
 
 const storyManager = new StoryManager(petCollection);
 const storyUIRenderer = new StoryUIRenderer('story-modal', storyManager);
@@ -95,6 +194,26 @@ window.statManager = statManager;
 window.videoManager = videoManager;
 window.onlineRewardManager = onlineRewardManager;
 
+// 初始化流程 (此处逻辑已移至文件末尾的 initGame)
+
+// 处理页面可见性变化，失去焦点时暂停音频
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    audioManager.suspend();
+  } else {
+    audioManager.resume();
+  }
+});
+
+// 处理窗口失去/获得焦点
+window.addEventListener('blur', () => {
+  audioManager.suspend();
+});
+
+window.addEventListener('focus', () => {
+  audioManager.resume();
+});
+
 // 同步初始加成状态
 engine.setCombatTimeScale(statManager.combatTimeScale);
 currencyManager.setGoldMultiplier(statManager.goldMultiplier);
@@ -111,6 +230,7 @@ const desktopEntryBtn = document.getElementById('desktop-entry-btn');
 const autoStrikeBtn = document.getElementById('auto-strike-btn');
 const manaRefillBtn = document.getElementById('mana-refill-btn');
 const onlineRewardBtn = document.getElementById('online-reward-btn');
+const skinEntryBtn = document.getElementById('skin-entry-btn');
 
 const closePetBtn = petModal.querySelector('.close-btn');
 const closeBonusBtn = bonusModal.querySelector('.close-btn');
@@ -129,6 +249,7 @@ const closeManaActionBtn = manaModal.querySelector('.close-action-btn');
 const closeOnlineBtn = onlineModal.querySelector('.close-btn');
 const closeAdventureBtn = adventureModal.querySelector('.close-btn');
 const closeSettingsBtn = settingsModal.querySelector('.close-btn');
+const closeSkinBtn = skinModal.querySelector('.close-btn');
 
 const petModalBody = petModal.querySelector('.modal-body');
 const bonusModalBody = bonusModal.querySelector('.modal-body');
@@ -142,6 +263,7 @@ const lingfuDisplay = document.getElementById('lingfu-val');
 
 // 初始化 UI 渲染器
 const petUIRenderer = new PetUIRenderer(petModalBody, petCollection);
+window.petUIRenderer = petUIRenderer; // 暴露给全局以便皮肤系统调用
 const bonusUIRenderer = new BonusUIRenderer(bonusModalBody, statManager);
 const speedUIRenderer = new SpeedUIRenderer(speedModalBody, statManager);
 const cultUIRenderer = new CultivationUIRenderer(cultModalBody.querySelector('.pet-list-content'), cultivationManager);
@@ -388,6 +510,7 @@ if (autoStrikeModal) {
   const upgradeBtn = autoStrikeModal.querySelector('.upgrade-action-btn');
   if (upgradeBtn) {
     upgradeBtn.addEventListener('click', () => {
+      audioManager.playClick();
       statManager.activateAutoStrike();
       showFeedback(true);
       closeAutoStrikeModal();
@@ -452,21 +575,43 @@ function flashSkillIcon(skillName) {
 // 导出给逻辑层使用
 window.flashSkillIcon = flashSkillIcon;
 
-// --- 冒险面板逻辑 ---
+// --- 试炼面板逻辑 ---
 let adventureScrollController = null;
 
 function openAdventureModal() {
   adventureModal.classList.remove('hidden');
   
-  const scrollView = adventureModal.querySelector('.pet-scroll-view');
-  const scrollContent = adventureModal.querySelector('.pet-list-content');
-  
-  if (!adventureScrollController && scrollView && scrollContent) {
-    adventureScrollController = new ScrollController({
-      container: scrollView,
-      content: scrollContent
-    });
+  // 渲染试炼列表
+  if (trialUIRenderer) {
+    trialUIRenderer.render();
   }
+
+  // 默认显示第一个分页 (强运试炼)
+  const tabs = adventureModal.querySelectorAll('.adv-tab');
+  const pages = adventureModal.querySelectorAll('.trial-page');
+  
+  // 初始化或重置到第一个标签
+  tabs.forEach((tab, index) => {
+    if (index === 0) tab.classList.add('active');
+    else tab.classList.remove('active');
+  });
+  pages.forEach((page, index) => {
+    if (index === 0) page.classList.remove('hidden');
+    else page.classList.add('hidden');
+  });
+
+  const activePage = adventureModal.querySelector('.trial-page:not(.hidden)');
+  const scrollView = activePage.querySelector('.pet-scroll-view');
+  const scrollContent = activePage.querySelector('.pet-list-content');
+  
+  if (adventureScrollController) {
+    adventureScrollController.destroy();
+  }
+
+  adventureScrollController = new ScrollController({
+    container: scrollView,
+    content: scrollContent
+  });
   
   requestAnimationFrame(() => {
     if (adventureScrollController) adventureScrollController.updateBounds();
@@ -475,6 +620,49 @@ function openAdventureModal() {
 
 function closeAdventureModal() {
   adventureModal.classList.add('hidden');
+  if (adventureScrollController) {
+    adventureScrollController.destroy();
+    adventureScrollController = null;
+  }
+}
+
+// 试炼分页切换事件
+const adventureTabs = adventureModal.querySelector('.adventure-tabs');
+if (adventureTabs) {
+  adventureTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.adv-tab');
+    if (!tab) return;
+
+    audioManager.playClick();
+    const targetId = tab.dataset.target;
+    const targetPage = document.getElementById(targetId);
+    if (!targetPage) return;
+
+    // 切换标签状态
+    adventureModal.querySelectorAll('.adv-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // 切换页面显示
+    adventureModal.querySelectorAll('.trial-page').forEach(p => p.classList.add('hidden'));
+    targetPage.classList.remove('hidden');
+
+    // 重新初始化滚动
+    if (adventureScrollController) {
+      adventureScrollController.destroy();
+    }
+
+    const scrollView = targetPage.querySelector('.pet-scroll-view');
+    const scrollContent = targetPage.querySelector('.pet-list-content');
+    
+    adventureScrollController = new ScrollController({
+      container: scrollView,
+      content: scrollContent
+    });
+
+    requestAnimationFrame(() => {
+      adventureScrollController.updateBounds();
+    });
+  });
 }
 
 // --- 设置面板逻辑 ---
@@ -486,7 +674,191 @@ function closeSettingsModal() {
   settingsModal.classList.add('hidden');
 }
 
-// --- 剧情面板逻辑 ---
+// --- 皮肤面板逻辑 ---
+let skinScrollController = null;
+
+function openSkinModal() {
+  skinModal.classList.remove('hidden');
+  
+  updateSkinBonusUI(); // 更新总加成显示
+  renderSkinList(); // 渲染皮肤列表
+  
+  const scrollView = skinModal.querySelector('.pet-scroll-view');
+  const scrollContent = skinModal.querySelector('.skin-grid');
+  
+  if (!skinScrollController && scrollView && scrollContent) {
+    skinScrollController = new ScrollController({
+      container: scrollView,
+      content: scrollContent
+    });
+  }
+  
+  requestAnimationFrame(() => {
+    if (skinScrollController) skinScrollController.updateBounds();
+  });
+}
+
+/**
+ * 渲染皮肤列表
+ */
+function renderSkinList() {
+  const skinGrid = skinModal.querySelector('.skin-grid');
+  if (!skinGrid) return;
+
+  const html = SKINS.map((skin, index) => {
+    const isCurrent = skin.name === currentSkin;
+    const gradeClass = `grade-${skin.grade.toLowerCase()}`;
+    const displayName = skin.unlocked ? skin.name : '???';
+    const displayIcon = skin.unlocked ? skin.name : '?';
+    const circleClass = skin.unlocked ? 'blue' : 'gray';
+    
+    return `
+      <div class="skin-item ${isCurrent ? 'active' : ''} ${skin.unlocked ? '' : 'locked'}" data-skin="${skin.name}">
+        <div class="skin-card ${gradeClass}">
+          <div class="skin-pet-icon">
+            <div class="pet-icon-circle ${circleClass}">${displayIcon}</div>
+          </div>
+          <div class="skin-grade-badge">${skin.grade}级</div>
+          <div class="skin-no">No.${index + 1}</div>
+          ${isCurrent ? '<div class="skin-equipped-badge">已穿戴</div>' : ''}
+        </div>
+        <div class="skin-name">${displayName}</div>
+      </div>
+    `;
+  }).join('');
+
+  skinGrid.innerHTML = html;
+
+  // 更新解锁进度文本
+  const statusHeader = skinModal.querySelector('.skin-status-header');
+  if (statusHeader) {
+    const unlockedCount = SKINS.filter(s => s.unlocked).length;
+    statusHeader.textContent = `已解锁：${unlockedCount}/${SKINS.length}`;
+  }
+
+  // 绑定点击事件
+  skinGrid.querySelectorAll('.skin-item').forEach(item => {
+    item.addEventListener('click', () => {
+      audioManager.playClick();
+      const skinName = item.dataset.skin;
+      const skin = SKINS.find(s => s.name === skinName);
+      if (skin && skin.unlocked) {
+        changePetSkin(skinName);
+      }
+    });
+  });
+}
+
+/**
+ * 切换皮肤逻辑
+ */
+function changePetSkin(skinName) {
+  if (currentSkin === skinName) return;
+  
+  currentSkin = skinName;
+  window.currentSkin = skinName; // 同步给全局变量
+  
+  // 1. 更新主界面战宠外观 (如果有全局引用)
+  if (window.petUIRenderer) {
+    window.petUIRenderer.render(); // 重新渲染战宠列表以更新图标
+  }
+  
+  // 2. 更新皮肤界面显示
+  renderSkinList();
+  
+  // 3. 提示
+  console.log(`已切换至皮肤: ${skinName}`);
+}
+
+/**
+ * 随机解锁一个指定档次的皮肤
+ * @param {string} grade 档次 ('C', 'B', 'A', 'S')
+ * @returns {object} { success: boolean, skin: object, isNew: boolean, rewardLingfu: number }
+ */
+function unlockRandomSkin(grade) {
+  const possibleSkins = SKINS.filter(s => s.grade === grade.toUpperCase());
+  if (possibleSkins.length === 0) return { success: false };
+
+  const randomIndex = Math.floor(Math.random() * possibleSkins.length);
+  const selectedSkin = possibleSkins[randomIndex];
+
+  let isNew = false;
+  let rewardLingfu = 0;
+
+  if (!selectedSkin.unlocked) {
+    selectedSkin.unlocked = true;
+    isNew = true;
+    updateSkinProgressUI();
+  } else {
+    // 重复获取，转换为灵符：100 * 属性点
+    const points = GameConfig.SKIN_GRADE_POINTS[selectedSkin.grade] || 0;
+    rewardLingfu = points * 100;
+    currencyManager.addLingfu(rewardLingfu);
+  }
+
+  // 如果皮肤界面打开着，刷新它
+  if (!skinModal.classList.contains('hidden')) {
+    renderSkinList();
+    updateSkinBonusUI();
+  }
+
+  return { success: true, skin: selectedSkin, isNew, rewardLingfu };
+}
+
+/**
+ * 抽取皮肤逻辑
+ */
+function drawSkin() {
+  audioManager.playClick();
+  const COST = 500;
+  // 使用 spendIngot 方法来检查余额并扣除，它会自动触发 UI 更新
+  if (!currencyManager.spendIngot(COST)) {
+    showFeedback(false, '元宝不足！');
+    return;
+  }
+
+  // 概率计算: C: 70%, B: 25%, A: 4.5%, S: 0.5%
+  const rand = Math.random() * 100;
+  let grade = 'C';
+  if (rand < 0.5) {
+    grade = 'S';
+  } else if (rand < 5.0) {
+    grade = 'A';
+  } else if (rand < 30.0) {
+    grade = 'B';
+  } else {
+    grade = 'C';
+  }
+
+  const result = unlockRandomSkin(grade);
+  if (result.success) {
+    const { skin, isNew, rewardLingfu } = result;
+    let message = '';
+    if (isNew) {
+      message = `抽中 ${grade}级皮肤：${skin.name}！`;
+    } else {
+      message = `抽中重复皮肤 ${skin.name}，转化为 ${rewardLingfu} 灵符`;
+    }
+    showFeedback(true, message);
+  }
+}
+
+// 绑定皮肤抽取按钮
+const skinDrawBtn = document.getElementById('skin-draw-btn');
+if (skinDrawBtn) {
+  skinDrawBtn.addEventListener('click', () => {
+    drawSkin();
+  });
+}
+
+window.unlockRandomSkin = unlockRandomSkin;
+window.calculateSkinBonuses = calculateSkinBonuses; // 暴露给战斗逻辑
+
+function closeSkinModal() {
+  skinModal.classList.add('hidden');
+}
+
+// --- 主循环与更新 ---
 function openStoryModal() {
   storyModal.classList.remove('hidden');
   if (storyUIRenderer) {
@@ -499,11 +871,18 @@ function closeStoryModal() {
 }
 
 // 显示强化反馈特效
-function showFeedback(isSuccess) {
+function showFeedback(isSuccess, customMessage = null) {
   const toast = document.createElement('div');
   toast.className = `feedback-toast ${isSuccess ? 'success' : 'fail'}`;
-  toast.textContent = isSuccess ? '强化成功！' : '强化失败';
+  toast.textContent = customMessage || (isSuccess ? '强化成功！' : '强化失败');
   document.getElementById('game-container').appendChild(toast);
+  
+  // 播放对应的音效
+  if (isSuccess) {
+    audioManager.playUpgradeSuccess();
+  } else {
+    audioManager.playUpgradeFailure();
+  }
   
   // 动画结束后移除
   setTimeout(() => {
@@ -517,6 +896,7 @@ petModalBody.addEventListener('click', (e) => {
   const unlockBtn = e.target.closest('.unlock-btn');
 
   if (upgradeBtn) {
+    audioManager.playClick();
     const petId = parseInt(upgradeBtn.dataset.id);
     const isAd = upgradeBtn.dataset.ad === 'true';
     
@@ -543,6 +923,7 @@ petModalBody.addEventListener('click', (e) => {
   }
 
   if (unlockBtn) {
+    audioManager.playClick();
     const result = petCollection.unlockNextPet(currencyManager);
     if (result.success) {
       console.log(`解锁成功！`);
@@ -559,6 +940,7 @@ petModalBody.addEventListener('click', (e) => {
 const activeSkillSlots = document.querySelectorAll('.skill-slot.active-skill');
 activeSkillSlots.forEach(slot => {
       slot.addEventListener('click', () => {
+        audioManager.playClick();
         const skillName = slot.dataset.skill;
         const result = activeSkillManager.useSkill(skillName);
         if (result.success) {
@@ -656,6 +1038,7 @@ speedModalBody.addEventListener('click', (e) => {
 cultModalBody.addEventListener('click', (e) => {
   const upgradeBtn = e.target.closest('.upgrade-btn');
   if (upgradeBtn) {
+    audioManager.playClick();
     const name = upgradeBtn.dataset.name;
     const isAd = upgradeBtn.dataset.ad === 'true';
     
@@ -679,6 +1062,7 @@ if (auraModalBody) {
   auraModalBody.addEventListener('click', (e) => {
     const upgradeBtn = e.target.closest('.upgrade-btn');
     if (upgradeBtn) {
+      audioManager.playClick();
       const name = upgradeBtn.dataset.name;
       const isAd = upgradeBtn.dataset.ad === 'true';
       
@@ -702,6 +1086,7 @@ if (auraModalBody) {
 skillModalBody.addEventListener('click', (e) => {
   const upgradeBtn = e.target.closest('.upgrade-btn');
   if (upgradeBtn) {
+    audioManager.playClick();
     const name = upgradeBtn.dataset.name;
     const isAd = upgradeBtn.dataset.ad === 'true';
     
@@ -725,6 +1110,7 @@ if (manaModalBody) {
   manaModalBody.addEventListener('click', (e) => {
     const upgradeActionBtn = e.target.closest('.upgrade-action-btn');
     if (upgradeActionBtn) {
+      audioManager.playClick();
       // 模拟看广告逻辑
       videoManager.consumeVideo('mana');
       
@@ -762,6 +1148,15 @@ function updateMainManaBar() {
   const percent = (statManager.mana / statManager.maxMana) * 100;
   mainManaBarFill.style.width = `${percent}%`;
   mainManaBarVal.textContent = `${statManager.mana.toFixed(1)}/${statManager.maxMana.toFixed(1)}`;
+}
+
+// 更新主界面皮肤进度
+function updateSkinProgressUI() {
+  const skinProgressSmall = document.querySelector('.skin-progress-small');
+  if (!skinProgressSmall) return;
+  
+  const unlockedCount = SKINS.filter(s => s.unlocked).length;
+  skinProgressSmall.textContent = `${unlockedCount}/${SKINS.length}`;
 }
 
 // 更新主界面挂机按钮时间
@@ -832,10 +1227,48 @@ function updateAutoStrikeButton() {
   }
 }
 
+// 更新主界面在线奖励按钮倒计时
+const onlineTimeSmall = document.querySelector('.online-time-small');
+
+function updateOnlineRewardButton() {
+  if (!onlineRewardManager || !onlineTimeSmall) return;
+
+  const nextIndex = onlineRewardManager.rewardsConfig.findIndex((_, i) => !onlineRewardManager.isClaimed(i));
+  
+  if (nextIndex === -1) {
+    onlineTimeSmall.textContent = '已领完';
+    onlineTimeSmall.classList.remove('text-red');
+    return;
+  }
+
+  if (onlineRewardManager.canClaim(nextIndex)) {
+    onlineTimeSmall.textContent = '可领取';
+    onlineTimeSmall.classList.add('text-red');
+    return;
+  }
+
+  const reward = onlineRewardManager.rewardsConfig[nextIndex];
+  const targetSeconds = reward.minutes * 60;
+  const remainingSeconds = Math.max(0, Math.ceil(targetSeconds - onlineRewardManager.onlineTime));
+
+  let timeStr = "";
+  if (remainingSeconds >= 60) {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    timeStr = `${minutes}m${seconds}s`;
+  } else {
+    timeStr = `${remainingSeconds}s`;
+  }
+
+  onlineTimeSmall.textContent = timeStr;
+  onlineTimeSmall.classList.remove('text-red');
+}
+
 // 按钮点击
 if (petNavBtn) {
   petNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openPetModal();
   });
 }
@@ -843,6 +1276,7 @@ if (petNavBtn) {
 if (auraNavBtn) {
   auraNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openAuraModal();
   });
 }
@@ -850,6 +1284,7 @@ if (auraNavBtn) {
 if (cultNavBtn) {
   cultNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openCultModal();
   });
 }
@@ -857,6 +1292,7 @@ if (cultNavBtn) {
 if (skillNavBtn) {
   skillNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openSkillModal();
   });
 }
@@ -864,6 +1300,7 @@ if (skillNavBtn) {
 if (combatSpeedBtn) {
   combatSpeedBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openSpeedModal();
   });
 }
@@ -871,6 +1308,7 @@ if (combatSpeedBtn) {
 if (goldBonusBtn) {
   goldBonusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openBonusModal();
   });
 }
@@ -878,6 +1316,7 @@ if (goldBonusBtn) {
 if (afkRewardBtn) {
   afkRewardBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openAfkModal();
   });
 }
@@ -885,6 +1324,7 @@ if (afkRewardBtn) {
 if (desktopEntryBtn) {
   desktopEntryBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openDesktopModal();
   });
 }
@@ -892,6 +1332,7 @@ if (desktopEntryBtn) {
 if (autoStrikeBtn) {
   autoStrikeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openAutoStrikeModal();
   });
 }
@@ -899,6 +1340,7 @@ if (autoStrikeBtn) {
 if (manaRefillBtn) {
   manaRefillBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openManaModal();
   });
 }
@@ -906,13 +1348,23 @@ if (manaRefillBtn) {
 if (onlineRewardBtn) {
   onlineRewardBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openOnlineModal();
+  });
+}
+
+if (skinEntryBtn) {
+  skinEntryBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    audioManager.playClick();
+    openSkinModal();
   });
 }
 
 if (settingsBtn) {
   settingsBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openSettingsModal();
   });
 }
@@ -920,6 +1372,7 @@ if (settingsBtn) {
 if (adventureNavBtn) {
   adventureNavBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openAdventureModal();
   });
 }
@@ -939,7 +1392,8 @@ const modalConfigs = [
   { modal: onlineModal, panel: '.online-panel', closer: closeOnlineModal },
   { modal: adventureModal, panel: '.adventure-panel', closer: closeAdventureModal },
   { modal: settingsModal, panel: '.settings-panel', closer: closeSettingsModal },
-  { modal: storyModal, panel: '.story-panel', closer: closeStoryModal }
+  { modal: storyModal, panel: '.story-panel', closer: closeStoryModal },
+  { modal: skinModal, panel: '.skin-panel', closer: closeSkinModal }
 ];
 
 modalConfigs.forEach(({ modal, panel, closer }) => {
@@ -963,6 +1417,7 @@ modalConfigs.forEach(({ modal, panel, closer }) => {
   closeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      audioManager.playClick();
       closer();
     });
   });
@@ -984,22 +1439,27 @@ if (afkModal) {
       const doubleClaimBtn = e.target.closest('.double-claim-btn');
 
       if (leftArrow) {
+        audioManager.playClick();
         if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('left');
       } else if (rightArrow) {
+        audioManager.playClick();
         if (window.afkUIRenderer) window.afkUIRenderer.shiftStage('right');
       } else if (stageItem && !stageItem.classList.contains('disabled')) {
+        audioManager.playClick();
         const stage = parseInt(stageItem.dataset.stage);
         if (window.afkManager) {
           window.afkManager.setSelectedStage(stage);
           window.afkUIRenderer.render();
         }
       } else if (claimBtn) {
+        audioManager.playClick();
         if (window.afkManager) {
           window.afkManager.claim(false);
           window.afkUIRenderer.render();
           showFeedback(true);
         }
       } else if (doubleClaimBtn) {
+        audioManager.playClick();
         if (window.afkManager) {
           window.afkManager.claim(true);
           window.afkUIRenderer.render();
@@ -1021,6 +1481,19 @@ if (settingsModal) {
         const settingId = checkbox.id;
         const isChecked = checkbox.classList.contains('checked');
         console.log(`【系统】设置变更: ${settingId} = ${isChecked}`);
+        
+        // 联动音效开关
+        if (settingId === 'setting-sound') {
+          audioManager.setEnabled(isChecked);
+        }
+        
+        // 联动音乐开关
+        if (settingId === 'setting-music') {
+          audioManager.setMusicEnabled(isChecked);
+        }
+        
+        // 点击复选框也播放音效
+        audioManager.playClick();
       }
     });
   }
@@ -1033,6 +1506,7 @@ if (onlineModal) {
     onlinePanel.addEventListener('click', (e) => {
       const claimBtn = e.target.closest('.claim-btn-small');
       if (claimBtn && !claimBtn.classList.contains('disabled')) {
+        audioManager.playClick();
         const index = parseInt(claimBtn.dataset.index);
         if (onlineRewardManager) {
           const result = onlineRewardManager.claimReward(index);
@@ -1050,6 +1524,7 @@ if (onlineModal) {
 if (storyBtn) {
   storyBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     openStoryModal();
   });
 }
@@ -1058,6 +1533,7 @@ const storyConfirmBtn = storyModal ? storyModal.querySelector('.story-confirm-bt
 if (storyConfirmBtn) {
   storyConfirmBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    audioManager.playClick();
     // 如果任务不可领取，点击按钮则关闭弹窗
     if (!storyManager.isTaskClaimable) {
       closeStoryModal();
@@ -1070,6 +1546,9 @@ enemyManager.onEnemyDeath = (enemy) => {
   // 基础掉落
   currencyManager.addGold(enemy.lootGold, true); 
   
+  // 播放敌人死亡音效
+  audioManager.playEnemyDeath();
+  
   // 判定双倍掉落 (来自修炼系统)
   if (cultivationManager) {
     const doubleLootRate = cultivationManager.getEffect('双倍掉落') - 1;
@@ -1078,6 +1557,11 @@ enemyManager.onEnemyDeath = (enemy) => {
       console.log('【系统】触发双倍掉落！');
     }
   }
+};
+
+// 战宠死亡音效
+petManager.onPetDeath = (pet) => {
+  audioManager.playPetDeath();
 };
 
 // 获取所有战宠 UI 占位符的位置 (数学计算版，确保中心点精准)
@@ -1184,9 +1668,20 @@ const levelManager = new LevelManager({
   taskManager // 注入任务管理器
 });
 
+// 关联 TrialManager 的 levelManager
+trialManager.levelManager = levelManager;
+trialManager.loadTrialData();
+const trialUIRenderer = new TrialUIRenderer({ trialManager });
+
 // 初始化并启动
 async function initGame() {
-  await Promise.all([
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-game-btn');
+  const loadingBar = document.querySelector('.loading-fill');
+  const loadingText = document.querySelector('.loading-text');
+
+  // 1. 开始加载数据
+  const loadPromise = Promise.all([
     storyManager.loadStories(),
     petCollection.init(),
     cultivationManager.init(), // 加载修炼数据
@@ -1196,7 +1691,30 @@ async function initGame() {
     levelManager.start()
   ]);
 
-  // 在关卡数据加载后初始化挂机管理器
+  // 2. 模拟/展示加载进度
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 10;
+    if (progress > 90) progress = 90; // 留一点给真实加载完成
+    if (loadingBar) loadingBar.style.width = `${progress}%`;
+  }, 100);
+
+  // 等待真实数据加载完成
+  await loadPromise;
+  
+  // 确保进度条到 100%
+  clearInterval(progressInterval);
+  if (loadingBar) loadingBar.style.width = '100%';
+  if (loadingText) loadingText.textContent = '神兽召唤就绪';
+
+  // 显示开始按钮
+  setTimeout(() => {
+    const container = document.querySelector('.loading-container');
+    if (container) container.style.display = 'none';
+    if (startBtn) startBtn.classList.remove('hidden');
+  }, 500);
+
+  // 3. 在关卡数据加载后初始化挂机管理器
   const afkManager = new AFKManager(currencyManager, taskManager, levelManager.levelDataMap);
   const afkUIRenderer = new AFKUIRenderer(afkModal, afkManager);
   window.afkManager = afkManager; // 暴露给全局或事件监听器
@@ -1215,8 +1733,41 @@ async function initGame() {
 
   updateBuffLevelUI(); // 初始更新加成等级
   updateMainManaBar(); // 初始更新法力条
-  // 初始不打开战宠界面了
-  gameLoop();
+  updateSkinProgressUI(); // 初始更新皮肤进度
+  updateOnlineRewardButton(); // 初始更新在线奖励按钮状态
+
+  // 4. 等待用户点击“开始游戏”
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      // 初始化音频
+      const soundCheckbox = document.getElementById('setting-sound');
+      const musicCheckbox = document.getElementById('setting-music');
+      
+      if (soundCheckbox) {
+        audioManager.setEnabled(soundCheckbox.classList.contains('checked'));
+      }
+      if (musicCheckbox) {
+        audioManager.setMusicEnabled(musicCheckbox.classList.contains('checked'));
+      }
+      
+      audioManager.init();
+      audioManager.playClick();
+
+      // 界面淡出并启动循环
+      if (startScreen) {
+        startScreen.classList.add('fade-out');
+        setTimeout(() => {
+          startScreen.remove();
+          gameLoop(); // 正式开始游戏循环
+        }, 800);
+      } else {
+        gameLoop();
+      }
+    });
+  } else {
+    // 如果没有开始界面（可能报错或被移除），直接启动
+    gameLoop();
+  }
 }
 
 // 游戏主循环
@@ -1239,8 +1790,18 @@ function gameLoop() {
   if (now - lastAfkUpdateTime >= 1000) {
     updateAfkButton();
     updateAutoStrikeButton(); // 更新自动出击倒计时
+    updateOnlineRewardButton(); // 更新在线奖励倒计时
     lastAfkUpdateTime = now;
   }
+
+  // 确保敌人实体订阅了伤害事件，用于显示飘字 (战宠受伤不显示飘字)
+  engine.entities.forEach(entity => {
+    if (entity.side === 'enemy' && !entity.onDamage) {
+      entity.onDamage = (amount) => {
+        renderer.createDamageText(entity.x, entity.y, amount);
+      };
+    }
+  });
 
   // 更新主动技能 UI 状态
   updateSkillsUI();

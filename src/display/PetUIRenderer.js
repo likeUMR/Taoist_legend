@@ -74,12 +74,17 @@ export class PetUIRenderer {
       const adClass = showAdBtn ? 'ad-style' : '';
       const videoIcon = showAdBtn ? '<i class="icon-video"></i> ' : '';
 
+      // 获取当前皮肤文字 (从全局 currentSkin 获取，如果不存在则默认为 '狗')
+      const skinText = window.currentSkin || '狗';
+
       return `
         <div class="pet-item" data-id="${pet.id}">
           <div class="pet-item-main">
             <div class="pet-icon-wrap">
               <div class="pet-level-badge">${pet.id}</div>
-              <div class="pet-icon-placeholder">🐺</div>
+              <div class="pet-icon-placeholder">
+                <div class="pet-icon-circle blue">${skinText}</div>
+              </div>
             </div>
             <div class="pet-info">
               <h3>${pet.name} <span class="class-text">CL.${pet.classLevel}</span> <span class="plus-text">+${pet.displayLevel}</span></h3>

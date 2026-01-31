@@ -1,6 +1,8 @@
 /**
  * 被动技能管理器：处理攻击时触发的逻辑
  */
+import { audioManager } from '../utils/AudioManager.js';
+
 export class PassiveSkillManager {
     constructor(skillManager, engine, renderer) {
         this.skillManager = skillManager;
@@ -55,6 +57,9 @@ export class PassiveSkillManager {
                 if (window.flashSkillIcon) {
                     window.flashSkillIcon(skillName);
                 }
+                
+                // 播放音效
+                audioManager.playPassiveSkill();
                 
                 config.execute(pet, intensity, target);
             }

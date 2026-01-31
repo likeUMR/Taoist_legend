@@ -123,6 +123,26 @@ export class DOMRenderer {
     el.addEventListener('animationend', onEnd);
   }
 
+  /**
+   * 创建伤害飘字
+   */
+  createDamageText(x, y, amount) {
+    const el = document.createElement('div');
+    el.className = 'damage-text';
+    // 格式化数字，如果是整数则不保留小数
+    const val = Math.floor(amount);
+    el.textContent = val > 0 ? `-${val}` : '';
+    if (!el.textContent) return;
+
+    el.style.left = `${x}px`;
+    el.style.top = `${y - 40}px`; // 在实体上方出现
+
+    this.container.appendChild(el);
+
+    // 动画结束后自动销毁
+    el.onanimationend = () => el.remove();
+  }
+
   render(entities) {
     for (const entity of entities) {
       let el = this.elementMap.get(entity.id);
@@ -132,6 +152,11 @@ export class DOMRenderer {
         el = this.createEntityElement(entity);
         this.container.appendChild(el);
         this.elementMap.set(entity.id, el);
+
+        // 为新实体绑定伤害监听
+        entity.onDamage = (amount) => {
+          this.createDamageText(entity.x, entity.y, amount);
+        };
       }
 
       if (entity.isDead) {
@@ -194,7 +219,7 @@ export class DOMRenderer {
         <div class="hp-fill"></div>
       </div>
       <div class="entity-vfx-layer"></div>
-      <div class="entity-icon">${entity.name}</div>
+      <div class="entity-icon">${window.currentSkin || entity.name}</div>
     `;
     return div;
   }

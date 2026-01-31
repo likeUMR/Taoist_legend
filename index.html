@@ -3,11 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Taoist Legend Game</title>
+    <title>道士传奇</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
   </head>
   <body>
+    <!-- 开始游戏界面 -->
+    <div id="start-screen" class="start-screen">
+      <div class="start-content">
+        <div class="start-bg-watermark">☯</div>
+        <h1 class="start-title">道士传奇</h1>
+        <div class="loading-container">
+          <p class="loading-text">道士15狗，全区横着走...</p>
+          <div class="loading-bar">
+            <div class="loading-fill"></div>
+          </div>
+        </div>
+        <button id="start-game-btn" class="start-btn hidden">开始游戏</button>
+        <div class="start-footer">v1.0.4 &copy; 2026</div>
+      </div>
+    </div>
+
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -43,14 +59,24 @@
       <main class="battle-scene">
         <div class="col-left">
           <div class="entry-btn" id="desktop-entry-btn"><span>添加桌面</span></div>
-          <div class="entry-btn" id="online-reward-btn"><span>在线奖励</span></div>
+          <div class="entry-btn" id="online-reward-btn">
+            <div class="btn-content">
+              <span>在线奖励</span>
+              <span class="online-time-small">00:00</span>
+            </div>
+          </div>
           <div class="entry-btn" id="story-btn">
             <div class="btn-content">
               <span>守护沙城</span>
               <span class="story-time-small">0d 00:00</span>
             </div>
           </div>
-          <div class="entry-btn"><span>神器</span></div>
+          <div class="entry-btn" id="skin-entry-btn">
+            <div class="btn-content">
+              <span>皮肤</span>
+              <span class="skin-progress-small">0/40</span>
+            </div>
+          </div>
           <div class="entry-btn hammer" id="afk-reward-btn">
             <div class="btn-content">
               <span>挂机奖励</span>
@@ -174,7 +200,7 @@
           </div>
           <div class="nav-btn" id="adventure-nav-btn">
             <div class="nav-icon">⚔️</div>
-            <span>冒险</span>
+            <span>试炼</span>
           </div>
           <div class="nav-btn">
             <div class="nav-icon">🧘</div>
@@ -390,84 +416,46 @@
         </div>
       </div>
 
-      <!-- 冒险界面 -->
+      <!-- 试炼界面 -->
       <div id="adventure-modal" class="modal-overlay hidden">
         <div class="modal-content adventure-panel">
           <header class="modal-header">
-            <h2>试练</h2>
+            <h2>试炼</h2>
             <button class="close-btn">&times;</button>
           </header>
           <div class="modal-body">
-            <div class="pet-scroll-view">
-              <div class="pet-list-content">
-                <!-- 第13层 -->
-                <div class="adventure-item">
-                  <div class="adventure-item-header">第13层</div>
-                  <div class="adventure-item-body">
-                    <div class="adventure-rewards">
-                      <div class="adv-reward-slot">💰<span>x200</span></div>
-                      <div class="adv-reward-slot">🏮<span>x600</span></div>
-                      <div class="adv-reward-slot">🧧<span>x1</span></div>
-                    </div>
-                    <button class="adv-challenge-btn">挑战</button>
-                  </div>
-                </div>
-                <!-- 第14层 -->
-                <div class="adventure-item">
-                  <div class="adventure-item-header">第14层</div>
-                  <div class="adventure-item-body">
-                    <div class="adventure-rewards">
-                      <div class="adv-reward-slot">💰<span>x200</span></div>
-                      <div class="adv-reward-slot">🏮<span>x600</span></div>
-                      <div class="adv-reward-slot">🧧<span>x1</span></div>
-                    </div>
-                    <button class="adv-challenge-btn">挑战</button>
-                  </div>
-                </div>
-                <!-- 第15层 -->
-                <div class="adventure-item">
-                  <div class="adventure-item-header">第15层</div>
-                  <div class="adventure-item-body">
-                    <div class="adventure-rewards">
-                      <div class="adv-reward-slot">💰<span>x200</span></div>
-                      <div class="adv-reward-slot">🏮<span>x600</span></div>
-                      <div class="adv-reward-slot">🧧<span>x1</span></div>
-                    </div>
-                    <button class="adv-challenge-btn">挑战</button>
-                  </div>
-                </div>
-                <!-- 第16层 -->
-                <div class="adventure-item">
-                  <div class="adventure-item-header">第16层</div>
-                  <div class="adventure-item-body">
-                    <div class="adventure-rewards">
-                      <div class="adv-reward-slot">💰<span>x200</span></div>
-                      <div class="adv-reward-slot">🏮<span>x600</span></div>
-                      <div class="adv-reward-slot">🧧<span>x1</span></div>
-                    </div>
-                    <button class="adv-challenge-btn">挑战</button>
-                  </div>
-                </div>
-                <!-- 第17层 -->
-                <div class="adventure-item">
-                  <div class="adventure-item-header">第17层</div>
-                  <div class="adventure-item-body">
-                    <div class="adventure-rewards">
-                      <div class="adv-reward-slot">💰<span>x200</span></div>
-                      <div class="adv-reward-slot">🏮<span>x600</span></div>
-                      <div class="adv-reward-slot">🧧<span>x1</span></div>
-                    </div>
-                    <button class="adv-challenge-btn">挑战</button>
-                  </div>
+            <!-- 强运试炼内容 -->
+            <div id="fortune-trial-page" class="trial-page">
+              <div class="pet-scroll-view">
+                <div class="pet-list-content">
+                  <!-- 强运试炼内容由 TrialUIRenderer 填充 -->
                 </div>
               </div>
             </div>
-            <!-- 冒险内部分页标签 -->
+
+            <!-- 速度试炼内容 -->
+            <div id="speed-trial-page" class="trial-page hidden">
+              <div class="pet-scroll-view">
+                <div class="pet-list-content">
+                  <!-- 速度试炼内容由 TrialUIRenderer 填充 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 法力试炼内容 -->
+            <div id="mana-trial-page" class="trial-page hidden">
+              <div class="pet-scroll-view">
+                <div class="pet-list-content">
+                  <!-- 法力试炼内容由 TrialUIRenderer 填充 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 试炼内部分页标签 -->
             <div class="adventure-tabs">
-              <button class="adv-tab active">试练</button>
-              <button class="adv-tab">每日<div class="dot red"></div></button>
-              <button class="adv-tab">讨伐</button>
-              <button class="adv-tab">秘境</button>
+              <button class="adv-tab active" data-target="fortune-trial-page">强运试炼</button>
+              <button class="adv-tab" data-target="speed-trial-page">速度试炼</button>
+              <button class="adv-tab" data-target="mana-trial-page">法力试炼</button>
             </div>
           </div>
         </div>
@@ -622,6 +610,93 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 皮肤图鉴界面 -->
+      <div id="skin-modal" class="modal-overlay hidden">
+        <div class="modal-content skin-panel">
+          <header class="modal-header">
+            <h2>战宠图鉴</h2>
+            <button class="close-btn">&times;</button>
+          </header>
+          <div class="modal-body">
+            <!-- 属性加成区域 -->
+            <div class="skin-bonus-section">
+              <div class="skin-bonus-title">属性加成</div>
+              <div class="skin-bonus-grid">
+                <div class="bonus-item"><span>生命值</span><span class="bonus-val">x1.00</span></div>
+                <div class="bonus-item"><span>攻击力</span><span class="bonus-val">x1.00</span></div>
+                <div class="bonus-item"><span>暴击率</span><span class="bonus-val">+0%</span></div>
+                <div class="bonus-item"><span>暴击伤害</span><span class="bonus-val">+0%</span></div>
+                <div class="bonus-item"><span>闪避率</span><span class="bonus-val">+0%</span></div>
+                <div class="bonus-item"><span>连击率</span><span class="bonus-val">+0%</span></div>
+              </div>
+            </div>
+
+            <div class="skin-status-header">
+              已解锁：9/40
+            </div>
+            <div class="pet-scroll-view">
+              <div class="skin-grid">
+                <!-- 示例皮肤项 (战宠风格) -->
+                <div class="skin-item">
+                  <div class="skin-card">
+                    <div class="skin-pet-icon">
+                      <div class="pet-icon-circle">狗</div>
+                    </div>
+                    <div class="skin-no">No.1</div>
+                  </div>
+                  <div class="skin-name">中华田园犬</div>
+                </div>
+                <div class="skin-item">
+                  <div class="skin-card">
+                    <div class="skin-pet-icon">
+                      <div class="pet-icon-circle blue">狼</div>
+                    </div>
+                    <div class="skin-no">No.2</div>
+                  </div>
+                  <div class="skin-name">疾风狼</div>
+                </div>
+                <div class="skin-item locked">
+                  <div class="skin-card">
+                    <div class="skin-pet-icon">
+                      <div class="pet-icon-circle gray">?</div>
+                    </div>
+                    <div class="skin-no">No.10</div>
+                  </div>
+                  <div class="skin-name">未解锁</div>
+                </div>
+                <!-- 更多占位 -->
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.11</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.12</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.13</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.14</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.15</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.16</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.17</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.18</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.19</div></div><div class="skin-name">未解锁</div></div>
+                <div class="skin-item locked"><div class="skin-card"><div class="skin-pet-icon"><div class="pet-icon-circle gray">?</div></div><div class="skin-no">No.20</div></div><div class="skin-name">未解锁</div></div>
+              </div>
+            </div>
+          </div>
+          <footer class="skin-footer">
+            <div class="skin-draw-container">
+              <button class="skin-draw-btn" id="skin-draw-btn">
+                <div class="draw-btn-content">
+                  <span class="btn-text">抽取皮肤</span>
+                  <div class="draw-cost">
+                    <i class="icon ingot"></i>
+                    <span>500</span>
+                  </div>
+                </div>
+              </button>
+              <div class="skin-draw-odds">
+                 概率：S级:0.5% A级:4.5% B级:25% C级:70%
+               </div>
+            </div>
+          </footer>
         </div>
       </div>
     </div>

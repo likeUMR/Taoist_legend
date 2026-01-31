@@ -2,6 +2,8 @@
  * ActiveSkillManager (主动技能管理器)
  * 负责管理技能的释放状态、冷却时间（CD）和法力消耗。
  */
+import { audioManager } from '../utils/AudioManager.js';
+
 export class ActiveSkillManager {
     constructor(skillManager, statManager, petManager) {
         this.skillManager = skillManager;
@@ -96,6 +98,9 @@ export class ActiveSkillManager {
         // 4. 触发效果
         const intensity = this.getSkillIntensity(skillName);
         config.effect(intensity);
+
+        // 播放音效
+        audioManager.playActiveSkill();
 
         // 5. 设置 CD 和 持续时间
         const cd = config.getCd ? config.getCd(intensity) : (config.cd || config.duration);

@@ -4,7 +4,8 @@ import { GameConfig } from './GameConfig.js';
  * 属性与加成管理类：统一管理全局倍速、金币加成等
  */
 export class StatManager {
-  constructor() {
+  constructor(trialManager = null) {
+    this.trialManager = trialManager;
     this.combatTimeScale = 1.0; // 战斗倍速：仅影响战斗逻辑 (移动、攻击、关卡切换延迟)
     this.goldMultiplier = 1.0;  // 金币加成倍率
 
@@ -22,6 +23,7 @@ export class StatManager {
     // 法力值相关
     this.mana = 20.0;
     this.maxMana = 20.0;
+    this.baseMaxMana = 20.0; // 基础法力上限
 
     // 自动出击相关
     this.autoStrikeTimer = 0; // 剩余自动出击时间 (秒)
@@ -58,6 +60,12 @@ export class StatManager {
 
     // 2. 计算金币加成
     this.goldMultiplier = this.baseMultiplier + (this.goldBonusLevel * this.bonusPerLevel);
+
+    // 3. 计算法力上限 (基础 + 试炼奖励)
+    const manaBonus = this.trialManager ? this.trialManager.getEffect('manaCap') : 0;
+    this.maxMana = this.baseMaxMana + manaBonus;
+    // 保证当前法力不超过上限
+    if (this.mana > this.maxMana) this.mana = this.maxMana;
   }
 
   save() {

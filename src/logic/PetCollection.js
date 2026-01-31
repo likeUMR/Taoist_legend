@@ -1,13 +1,15 @@
 import { PET_CONFIGS, getUpgradeInfo } from '../data/petConfigs.js';
 import { GameConfig } from './GameConfig.js';
+import { audioManager } from '../utils/AudioManager.js';
 
 /**
  * 战宠集合管理类：管理玩家拥有的战宠状态及其数值计算
  */
 export class PetCollection {
-  constructor(cultivationManager = null, auraManager = null) {
+  constructor(cultivationManager = null, auraManager = null, trialManager = null) {
     this.cultivationManager = cultivationManager;
     this.auraManager = auraManager;
+    this.trialManager = trialManager;
     // 初始状态：只解锁第 1 个战宠
     this.ownedPets = [
       { id: 1, level: 0 } // 注意：从等级 0 开始
@@ -137,12 +139,19 @@ export class PetCollection {
     const hpMult = this.auraManager ? this.auraManager.getModifier('加血光环') : 1.0;
     const speedMult = this.auraManager ? this.auraManager.getModifier('攻速光环') : 1.0;
 
+    // 获取试炼加成
+    const trialSpeedMult = this.trialManager ? this.trialManager.getEffect('speedMultiplier') : 1.0;
+
+    // 获取皮肤总加成
+    const skinBonuses = window.calculateSkinBonuses ? window.calculateSkinBonuses() : { hp: 0, atk: 0, critRate: 0, critDmg: 0, dodge: 0, combo: 0 };
+
     return this.ownedPets.map(state => {
       const config = PET_CONFIGS.find(c => c.id === state.id);
       const upgradeCfg = this.upgradeConfigs.get(state.level) || { atkMult: 1, hpMult: 1 };
       
-      const finalAtk = config.baseAtk * upgradeCfg.atkMult * dmgMult;
-      const finalHp = config.baseHp * upgradeCfg.hpMult * hpMult;
+      const finalAtk = config.baseAtk * upgradeCfg.atkMult * dmgMult * (1 + skinBonuses.atk);
+      const finalHp = config.baseHp * upgradeCfg.hpMult * hpMult * (1 + skinBonuses.hp);
+      const finalMoveSpeed = 100 * trialSpeedMult; // 基础移速 100 * 试炼倍率
 
       return {
         id: config.id,
@@ -150,7 +159,13 @@ export class PetCollection {
         atk: finalAtk,
         hp: finalHp,
         maxHp: finalHp,
-        atkSpeed: 0.8 / speedMult // 攻速光环增加百分比，意味着攻击间隔缩短
+        atkSpeed: 0.8 / speedMult, // 攻速光环增加百分比，意味着攻击间隔缩短
+        moveSpeed: finalMoveSpeed,
+        // 传递皮肤带来的高级属性
+        critRate: skinBonuses.critRate,
+        critDmg: 1.5 + skinBonuses.critDmg, // 基础暴伤 150%
+        dodge: skinBonuses.dodge,
+        combo: skinBonuses.combo
       };
     });
   }
@@ -211,7 +226,22 @@ export class PetCollection {
     }
 
     // 概率判定：如果是广告升级，强制 100% 成功
-    const isSuccess = (nextCfg.isBreakthrough || isFreeAd) ? true : (Math.random() <= nextCfg.successRate);
+    let isSuccess = (nextCfg.isBreakthrough || isFreeAd) ? true : (Math.random() <= nextCfg.successRate);
+
+    // 如果失败，尝试强运试炼的免费重试奖励
+    if (!isSuccess && !nextCfg.isBreakthrough && !isFreeAd && this.trialManager) {
+      const retryProb = this.trialManager.getEffect('retryProb');
+      if (retryProb > 0 && Math.random() <= retryProb) {
+        console.log(`【系统】强化失败！但触发了强运试炼奖励，获得一次免费重试机会...`);
+        // 再次判定成功率
+        isSuccess = Math.random() <= nextCfg.successRate;
+        if (isSuccess) {
+          console.log(`【系统】重试成功！`);
+        } else {
+          console.log(`【系统】重试依然失败。`);
+        }
+      }
+    }
 
     if (isSuccess) {
       petState.level++;
@@ -235,8 +265,10 @@ export class PetCollection {
         this.onUpgradeSuccess();
       }
       this.save();
+      audioManager.playUpgradeSuccess();
       return { success: true, newLevel: petState.level, doubleUpgraded };
     } else {
+      audioManager.playUpgradeFailure();
       return { success: false, reason: "强化失败" };
     }
   }

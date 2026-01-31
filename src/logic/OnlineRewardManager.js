@@ -50,11 +50,15 @@ export class OnlineRewardManager {
    */
   update(dt) {
     this.checkDailyReset();
+    const oldTime = Math.floor(this.onlineTime);
     this.onlineTime += dt;
-    this.save();
+    const newTime = Math.floor(this.onlineTime);
     
-    if (this.onUpdate) {
-      this.onUpdate(this.onlineTime);
+    if (newTime > oldTime) {
+      this.save();
+      if (this.onUpdate) {
+        this.onUpdate(this.onlineTime);
+      }
     }
   }
 

@@ -16,6 +16,9 @@ export class StoryManager {
     this.maxClassLevel = 0;
     this.isTaskClaimable = false;
     
+    // 奖励配置
+    this.rewardGrades = ['C', 'C', 'C', 'B', 'B', 'B', 'A', 'A', 'S', 'S'];
+    
     this.onTaskUpdate = null; // 状态更新回调
   }
 
@@ -115,11 +118,19 @@ export class StoryManager {
    * 领取奖励并切换到下一个
    */
   claimReward() {
-    if (!this.isTaskClaimable) return false;
+    if (!this.isTaskClaimable) return { success: false };
     
-    console.log(`【剧情】领取剧情任务 ${this.currentStoryIndex + 1} 奖励`);
+    const grade = this.rewardGrades[this.currentStoryIndex] || 'C';
+    let skinResult = null;
+    
+    if (window.unlockRandomSkin) {
+      skinResult = window.unlockRandomSkin(grade);
+    }
+    
+    console.log(`【剧情】领取剧情任务 ${this.currentStoryIndex + 1} 奖励 (档次: ${grade})`);
+    
     this.nextStory();
-    return true;
+    return { success: true, skinResult };
   }
 
   /**

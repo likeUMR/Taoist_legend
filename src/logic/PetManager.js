@@ -9,6 +9,7 @@ export class PetManager {
     this.pets = [];
     this.allDeadLogged = false;
     this.worldBounds = null;
+    this.onPetDeath = null; // 战宠死亡全局回调
   }
 
   /**
@@ -56,7 +57,7 @@ export class PetManager {
       const pet = new Pet({
         x: pos.x,
         y: pos.y,
-        speed: 100,
+        speed: data.moveSpeed || 100,
         hp: data.hp,
         maxHp: data.maxHp,
         atk: data.atk,
@@ -65,6 +66,10 @@ export class PetManager {
         worldBounds: this.worldBounds,
         deployDelay: delay // 设置出击延迟
       });
+
+      if (this.onPetDeath) {
+        pet.onDeath = this.onPetDeath;
+      }
 
       this.pets.push(pet);
       this.engine.addEntity(pet);

@@ -29,7 +29,23 @@ export class StoryUIRenderer {
     if (this.confirmBtn) {
       this.confirmBtn.addEventListener('click', () => {
         if (this.storyManager.isTaskClaimable) {
-          this.storyManager.claimReward();
+          const result = this.storyManager.claimReward();
+          if (result.success && result.skinResult) {
+            const { skin, isNew, rewardLingfu } = result.skinResult;
+            let message = '';
+            if (isNew) {
+              message = `获得新皮肤：${skin.name}！`;
+            } else {
+              message = `重复获得${skin.name}，转化为${rewardLingfu}灵符`;
+            }
+            
+            // 使用 main.js 中的 showFeedback 或自定义显示
+            if (window.showFeedback) {
+              window.showFeedback(true, message);
+            } else {
+              alert(message);
+            }
+          }
           this.render(); // 重新渲染下一段剧情
         }
       });

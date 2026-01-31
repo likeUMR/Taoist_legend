@@ -19,6 +19,18 @@ export class ScrollController {
     this.initEvents();
   }
 
+  destroy() {
+    if (this._onStart) this.container.removeEventListener('mousedown', this._onStart);
+    if (this._onMove) window.removeEventListener('mousemove', this._onMove);
+    if (this._onEnd) window.removeEventListener('mouseup', this._onEnd);
+    
+    if (this._onStart) this.container.removeEventListener('touchstart', this._onStart);
+    if (this._onMove) window.removeEventListener('touchmove', this._onMove);
+    if (this._onEnd) window.removeEventListener('touchend', this._onEnd);
+
+    if (this._onClick) this.container.removeEventListener('click', this._onClick, true);
+  }
+
   updateBounds() {
     const containerHeight = this.container.clientHeight;
     const contentHeight = this.content.scrollHeight;

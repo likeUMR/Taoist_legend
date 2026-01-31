@@ -1,6 +1,8 @@
 /**
  * 关卡管理类：控制关卡的推进、成败判定和重置逻辑
  */
+import { audioManager } from '../utils/AudioManager.js';
+
 export class LevelManager {
   constructor(options) {
     this.engine = options.engine;
@@ -21,6 +23,12 @@ export class LevelManager {
     this.transitionTimer = 0; // 转换计时器
     this.transitionCallback = null; // 转换结束后的回调
     this.lastFailedLevel = -1; // 记录最近一次失败的关卡
+
+    // 试炼相关
+    this.isTrialMode = false;
+    this.trialConfig = null;
+    this.trialCallback = null; // 试炼结束回调 (success) => {}
+
     this.initEvents();
   }
 
@@ -115,26 +123,59 @@ export class LevelManager {
     const centerX = this.worldBounds ? this.worldBounds.width / 2 : 200;
     const centerY = this.worldBounds ? this.worldBounds.height / 2 : 200;
     
-    // 读取关卡数据
-    const config = this.levelDataMap.get(level) || { atk: 5, hp: 50, rewardGold: 10 };
-    
-    // 敌人数量：第一关(level 0) 1个，第二关(level 1) 2个，依此类推，最多5个
-    const enemyCount = Math.min(level + 1, 5);
-    
-    // 新手关(前5关)总血量修正：TotalHP = TableHP * (n/5), n = level + 1
-    let totalHp = config.hp;
-    if (level < 5) {
-      totalHp = config.hp * ((level + 1) / 5);
+    let config;
+    let enemyCount;
+    let totalHp;
+
+    if (this.isTrialMode && this.trialConfig) {
+      config = this.trialConfig;
+      enemyCount = 3; // 试炼关卡固定 3 个敌人，或者根据需要调整
+      totalHp = config.hp;
+      if (this.uiElement) {
+        this.uiElement.textContent = `试炼中`;
+      }
+    } else {
+      // 读取正常关卡数据
+      config = this.levelDataMap.get(level) || { atk: 5, hp: 50, rewardGold: 10 };
+      
+      // 敌人数量：第一关(level 0) 1个，第二关(level 1) 2个，依此类推，最多5个
+      enemyCount = Math.min(level + 1, 5);
+      
+      // 新手关(前5关)总血量修正：TotalHP = TableHP * (n/5), n = level + 1
+      totalHp = config.hp;
+      if (level < 5) {
+        totalHp = config.hp * ((level + 1) / 5);
+      }
     }
     
     // 每个敌人的属性 = 总属性 / 敌人数量 (攻击力除外)
     this.enemyManager.spawnEnemies(enemyCount, centerX, centerY, {
       atk: config.atk,
       hp: totalHp / enemyCount,
-      lootGold: config.rewardGold / enemyCount
+      lootGold: this.isTrialMode ? 0 : (config.rewardGold / enemyCount)
     }, 60);
 
-    console.log(`【系统】加载第 ${this.currentLevel} 层...`);
+    console.log(`【系统】加载${this.isTrialMode ? '试炼' : '第 ' + this.currentLevel + ' 层'}...`);
+  }
+
+  /**
+   * 进入试炼模式
+   */
+  enterTrialMode(config, callback) {
+    this.isTrialMode = true;
+    this.trialConfig = config;
+    this.trialCallback = callback;
+    this.loadLevel(this.currentLevel); // 重新加载当前层，但会因为 isTrialMode 走试炼逻辑
+  }
+
+  /**
+   * 退出试炼模式
+   */
+  exitTrialMode(originalLevel) {
+    this.isTrialMode = false;
+    this.trialConfig = null;
+    this.trialCallback = null;
+    this.loadLevel(originalLevel);
   }
 
   /**
@@ -166,7 +207,13 @@ export class LevelManager {
 
     // 检查战宠是否全灭 (失败)
     const petsAlive = this.petManager.pets.filter(p => !p.isDead).length;
-    if (this.petManager.pets.length > 0 && petsAlive === 0) {
+    // 如果是试炼模式，且所有战宠都已完成出击或已阵亡，才判定失败
+    if (this.isTrialMode) {
+      const allDeployed = this.petManager.pets.every(p => p.deployDelay <= 0 || p.isDead);
+      if (allDeployed && petsAlive === 0) {
+        this.fail();
+      }
+    } else if (this.petManager.pets.length > 0 && petsAlive === 0) {
       if (this.currentLevel > 0) {
         this.fail();
       } else {
@@ -188,6 +235,17 @@ export class LevelManager {
   }
 
   win() {
+    audioManager.playWin();
+    // 如果是试炼模式，触发回调并返回
+    if (this.isTrialMode) {
+      this.startTransition(1.5, () => {
+        if (this.trialCallback) {
+          this.trialCallback(true);
+        }
+      });
+      return;
+    }
+
     // 如果当前层级小于最后失败的层级，则进入挂机模式
     const isRetrying = this.lastFailedLevel !== -1 && this.currentLevel < this.lastFailedLevel;
 
@@ -206,6 +264,17 @@ export class LevelManager {
   }
 
   fail() {
+    audioManager.playFail();
+    // 如果是试炼模式，触发回调并返回
+    if (this.isTrialMode) {
+      this.startTransition(1.5, () => {
+        if (this.trialCallback) {
+          this.trialCallback(false);
+        }
+      });
+      return;
+    }
+
     console.log(`【系统】第 ${this.currentLevel} 层挑战失败！退回上一层...`);
     
     // 记录失败的关卡
