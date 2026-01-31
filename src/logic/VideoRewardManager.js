@@ -24,6 +24,7 @@ export class VideoRewardManager {
     };
     
     this.lastResetDate = '';
+    this.totalWatched = 0; // 新增：累计观看次数
     this.load();
     this.checkDailyReset();
   }
@@ -41,6 +42,7 @@ export class VideoRewardManager {
         }
       }
       this.lastResetDate = data.lastResetDate || '';
+      this.totalWatched = data.totalWatched || 0; // 加载累计次数
     } else {
       // 尝试兼容旧的 ad_data 键名
       const oldSaved = GameConfig.getStorageItem('taoist_ad_data');
@@ -48,6 +50,7 @@ export class VideoRewardManager {
         const data = JSON.parse(oldSaved);
         this.counts = data.counts || this.counts;
         this.lastResetDate = data.lastResetDate || '';
+        this.totalWatched = data.totalWatched || 0;
       }
     }
   }
@@ -55,7 +58,8 @@ export class VideoRewardManager {
   save() {
     GameConfig.setStorageItem('taoist_video_data', JSON.stringify({
       counts: this.counts,
-      lastResetDate: this.lastResetDate
+      lastResetDate: this.lastResetDate,
+      totalWatched: this.totalWatched // 保存累计次数
     }));
   }
 
@@ -84,10 +88,15 @@ export class VideoRewardManager {
   consumeVideo(category) {
     if (this.getRemaining(category) > 0) {
       this.counts[category]++;
+      this.totalWatched++; // 增加累计观看次数
       this.save();
       return true;
     }
     return false;
+  }
+
+  getTotalWatched() {
+    return this.totalWatched;
   }
 
   getLimit(category) {

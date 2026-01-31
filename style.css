@@ -2392,6 +2392,42 @@ body {
   color: #111;
 }
 
+/* 广告统计样式 */
+.ad-stats-row {
+  background: #f9fafb;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 12px !important;
+  margin-top: 5px;
+}
+
+.ad-stats-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ad-stats-text {
+  font-size: 18px;
+  font-weight: bold;
+  color: #374151;
+  margin: 0;
+}
+
+#total-ad-count {
+  color: var(--blue);
+  font-size: 22px;
+}
+
+.ad-thank-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 .modal-action-btn[disabled] {
   background: #9ca3af !important;
   opacity: 0.7;

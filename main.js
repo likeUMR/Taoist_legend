@@ -1196,6 +1196,12 @@ if (settingsBtn) {
     audioManager.playClick();
     openSettingsModal();
 
+    // 更新广告观看次数统计
+    const totalAdCountSpan = document.getElementById('total-ad-count');
+    if (totalAdCountSpan && videoManager) {
+      totalAdCountSpan.textContent = videoManager.getTotalWatched();
+    }
+
     // 如果设置引导还在显示，点击后移除
     if (settingsTutorialContainer) {
       settingsTutorialContainer.remove();
