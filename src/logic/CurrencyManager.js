@@ -268,4 +268,19 @@ export class CurrencyManager {
   getLingfu() {
     return this.lingfu;
   }
+
+  /**
+   * 回满精华 (通过看广告)
+   */
+  refillEssence() {
+    this.essence = this.maxEssence;
+    this.lastRecoveryTime = Date.now();
+    this.recoveryAccumulator = 0;
+    
+    if (this.onEssenceUpdate) {
+      this.onEssenceUpdate(this.essence, 0);
+    }
+    this.save();
+    return true;
+  }
 }

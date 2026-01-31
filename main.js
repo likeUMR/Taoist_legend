@@ -683,6 +683,16 @@ function showFeedback(isSuccess, customMessage = null) {
 petModalBody.addEventListener('click', (e) => {
   const upgradeBtn = e.target.closest('.upgrade-btn');
   const unlockBtn = e.target.closest('.unlock-btn');
+  const essenceAdBtn = e.target.closest('.essence-ad-btn');
+
+  if (essenceAdBtn) {
+    audioManager.playClick();
+    if (videoManager.consumeVideo('essence')) {
+      currencyManager.refillEssence();
+      console.log('【系统】观看视频成功，神兽精华已回满');
+    }
+    return;
+  }
 
   if (upgradeBtn) {
     audioManager.playClick();

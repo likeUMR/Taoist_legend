@@ -127,6 +127,9 @@ export class PetUIRenderer {
             <div class="essence-fill"></div>
             <div class="essence-text">神兽精华: 0/15</div>
           </div>
+          <button class="essence-ad-btn" style="display: none;">
+            <i class="icon-video"></i> 回满精华
+          </button>
         </div>
       `;
     }
@@ -152,6 +155,8 @@ export class PetUIRenderer {
 
     const fill = footer.querySelector('.essence-fill');
     const text = footer.querySelector('.essence-text');
+    const adBtn = footer.querySelector('.essence-ad-btn');
+    const adVal = footer.querySelector('.essence-ad-val');
 
     const percent = Math.max(0, Math.min(100, (current / max) * 100));
     fill.style.width = `${percent}%`;
@@ -165,6 +170,16 @@ export class PetUIRenderer {
       statusText += " (已满值)";
     }
     text.textContent = statusText;
+
+    // 处理广告按钮显示逻辑
+    if (adBtn) {
+      // 当精华小于等于 0 时显示，不再受次数限制
+      if (current <= 0) {
+        adBtn.style.display = 'flex';
+      } else {
+        adBtn.style.display = 'none';
+      }
+    }
   }
 
   formatNumber(num) {

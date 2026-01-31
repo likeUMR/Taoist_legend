@@ -10,7 +10,8 @@ export class VideoRewardManager {
       'cultivation': 5,
       'aura': 5,
       'skill': 10,
-      'mana': 99
+      'mana': 99,
+      'essence': 999999 // 取消限制，设为一个极大值
     };
     
     this.counts = {
@@ -18,7 +19,8 @@ export class VideoRewardManager {
       'cultivation': 0,
       'aura': 0,
       'skill': 0,
-      'mana': 0
+      'mana': 0,
+      'essence': 0
     };
     
     this.lastResetDate = '';
@@ -60,7 +62,7 @@ export class VideoRewardManager {
   checkDailyReset() {
     const today = new Date().toLocaleDateString();
     if (this.lastResetDate !== today) {
-      this.counts = { 'pet': 0, 'cultivation': 0, 'aura': 0, 'skill': 0, 'mana': 0 };
+      this.counts = { 'pet': 0, 'cultivation': 0, 'aura': 0, 'skill': 0, 'mana': 0, 'essence': 0 };
       this.lastResetDate = today;
       this.save();
     }
