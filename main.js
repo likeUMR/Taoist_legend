@@ -1190,7 +1190,7 @@ if (settingsBtn) {
     if (settingsTutorialContainer) {
       settingsTutorialContainer.remove();
       settingsTutorialContainer = null;
-      GameConfig.setStorageItem('tutorial_settings_done', 'true');
+      GameConfig.setStorageItem('taoist_tutorial_settings_done', 'true');
     }
   });
 }
@@ -1513,7 +1513,7 @@ let settingsTutorialContainer = null;
 // 初始化教程提示
 function initTutorial() {
   // 1. 道士点击引导
-  const isTutorialDone = GameConfig.getStorageItem('tutorial_strike_done');
+  const isTutorialDone = GameConfig.getStorageItem('taoist_tutorial_strike_done');
   if (!isTutorialDone && meditator) {
     // 创建教程容器
     tutorialContainer = document.createElement('div');
@@ -1534,7 +1534,7 @@ function initTutorial() {
   }
 
   // 2. 设置/教程点击引导
-  const isSettingsTutorialDone = GameConfig.getStorageItem('tutorial_settings_done');
+  const isSettingsTutorialDone = GameConfig.getStorageItem('taoist_tutorial_settings_done');
   if (!isSettingsTutorialDone && settingsBtn) {
     settingsTutorialContainer = document.createElement('div');
     settingsTutorialContainer.className = 'tutorial-hint-container settings-tutorial';
@@ -1563,7 +1563,7 @@ if (meditator) {
     if (tutorialContainer) {
       tutorialContainer.remove();
       tutorialContainer = null;
-      GameConfig.setStorageItem('tutorial_strike_done', 'true');
+      GameConfig.setStorageItem('taoist_tutorial_strike_done', 'true');
     }
     
     if (!success) {
@@ -1725,7 +1725,7 @@ function gameLoop() {
   enemyManager.update();
   petManager.update();
   levelManager.update(combatDt); // 关卡管理器也使用战斗倍速相关的 dt
-  activeSkillManager.update(combatDt); // 更新主动技能 CD
+  activeSkillManager.update(rawDt); // 主动技能 CD 和 持续时间 不受战斗加速影响，使用真实时间
   statManager.update(rawDt); // 更新全局加成计时器 (自动出击等)
   currencyManager.updateRecovery(rawDt); // 精华恢复使用真实 dt
   onlineRewardManager.update(rawDt); // 在线奖励使用真实 dt

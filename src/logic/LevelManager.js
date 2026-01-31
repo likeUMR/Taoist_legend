@@ -2,6 +2,7 @@
  * 关卡管理类：控制关卡的推进、成败判定和重置逻辑
  */
 import { audioManager } from '../utils/AudioManager.js';
+import { GameConfig } from './GameConfig.js';
 
 export class LevelManager {
   constructor(options) {
@@ -31,6 +32,27 @@ export class LevelManager {
     this.onManualExit = null; // 主动退出试炼的回调
 
     this.initEvents();
+    this.load();
+  }
+
+  /**
+   * 加载持久化数据
+   */
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_level_progress');
+    if (saved) {
+      const data = JSON.parse(saved);
+      this.currentLevel = data.currentLevel || 0;
+    }
+  }
+
+  /**
+   * 保存持久化数据
+   */
+  save() {
+    GameConfig.setStorageItem('taoist_level_progress', JSON.stringify({
+      currentLevel: this.currentLevel
+    }));
   }
 
   /**
@@ -61,7 +83,7 @@ export class LevelManager {
    */
   async start() {
     await this.loadLevelData();
-    this.loadLevel(0);
+    this.loadLevel(this.currentLevel);
   }
 
   /**
@@ -276,10 +298,12 @@ export class LevelManager {
         this.loadLevel(this.currentLevel); // 重复本关
       });
     } else {
-      console.log(`【系统】第 ${this.currentLevel} 层挑战成功！即将进入下一层...`);
+      console.log(`【系统】第 ${this.currentLevel} 层通关！晋级到第 ${this.currentLevel + 1} 层...`);
+      this.currentLevel++;
+      this.save(); // 保存关卡进度
       this.startTransition(1.5, () => {
         this.lastFailedLevel = -1; // 确保清除过时的记录
-        this.loadLevel(this.currentLevel + 1);
+        this.loadLevel(this.currentLevel);
       });
     }
   }

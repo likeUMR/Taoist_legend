@@ -1,3 +1,5 @@
+import { GameConfig } from './GameConfig.js';
+
 /**
  * 任务管理类：负责加载任务配置、跟踪任务进度和奖励领取
  */
@@ -13,6 +15,32 @@ export class TaskManager {
     
     this.isLoaded = false;
     this.onUpdate = null; // UI 更新回调
+
+    this.load();
+  }
+
+  /**
+   * 加载持久化数据
+   */
+  load() {
+    const saved = GameConfig.getStorageItem('taoist_task_progress');
+    if (saved) {
+      const data = JSON.parse(saved);
+      this.currentTaskIndex = data.currentTaskIndex || 0;
+      this.maxLevelReached = data.maxLevelReached || 0;
+      this.totalUpgrades = data.totalUpgrades || 0;
+    }
+  }
+
+  /**
+   * 保存持久化数据
+   */
+  save() {
+    GameConfig.setStorageItem('taoist_task_progress', JSON.stringify({
+      currentTaskIndex: this.currentTaskIndex,
+      maxLevelReached: this.maxLevelReached,
+      totalUpgrades: this.totalUpgrades
+    }));
   }
 
   /**
@@ -50,6 +78,7 @@ export class TaskManager {
   recordLevelReached(level) {
     if (level > this.maxLevelReached) {
       this.maxLevelReached = level;
+      this.save();
       this.triggerUpdate();
     }
   }
@@ -59,6 +88,7 @@ export class TaskManager {
    */
   recordUpgrade() {
     this.totalUpgrades++;
+    this.save();
     this.triggerUpdate();
   }
 
@@ -102,6 +132,7 @@ export class TaskManager {
     console.log(`【任务】领取奖励: ${task.rewardGold} 金币`);
     
     this.currentTaskIndex++;
+    this.save();
     this.triggerUpdate();
     
     return { success: true, reward: task.rewardGold };

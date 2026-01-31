@@ -8,11 +8,22 @@
 
 | 模块名称 | 存储键名 | 存储内容 | 核心文件 |
 | :--- | :--- | :--- | :--- |
+| **货币资源** | `taoist_currency_data` | 金币、元宝、灵符、神兽精华、最后恢复时间 | `CurrencyManager.js` |
+| **战宠养成** | `taoist_pet_data` | 已拥有的战宠 ID 及其当前等级 | `PetCollection.js` |
+| **修炼系统** | `taoist_cultivation_data` | 各项修炼（金币产出、攻击加成等）的等级 | `CultivationManager.js` |
+| **光环系统** | `taoist_aura_data` | 各项光环的解锁与等级状态 | `AuraManager.js` |
+| **技能系统** | `taoist_skill_data` | 已学习的主动技能及其等级 | `SkillManager.js` |
+| **全局加成** | `taoist_stat_data` | 战斗倍速等级、金币加成等级、自动出击状态 | `StatManager.js` |
+| **试炼进度** | `taoist_trial_progress` | 各项试炼（强运、神速、聚灵）的通关最高层数 | `TrialManager.js` |
 | **广告管理** | `taoist_video_data` | 每日各项广告剩余次数、最后重置时间 | `VideoRewardManager.js` |
 | **剧情系统** | `taoist_legend_story_state` | 当前进行的剧情索引 (Index) | `StoryManager.js` |
 | **在线奖励** | `taoist_online_reward_data` | 当前领奖阶梯、已领奖状态、本次登录开始时间 | `OnlineRewardManager.js` |
-| **添加桌面** | `desktop_reward_claimed` | 是否已领取过“添加桌面”奖励 (Boolean) | `AddDesktopManager.js` |
 | **挂机系统** | `taoist_afk_data` | 上次领取奖励的时间戳 | `AFKManager.js` |
+| **添加桌面** | `taoist_desktop_reward_claimed` | 是否已领取过“添加桌面”奖励 (Boolean) | `AddDesktopManager.js` |
+| **引导系统** | `taoist_tutorial_strike_done` | 是否完成道士点击引导 | `main.js` |
+| **引导系统** | `taoist_tutorial_settings_done` | 是否完成设置/教程点击引导 | `main.js` |
+| **普通关卡** | `taoist_level_progress` | 当前挑战的关卡层数 | `LevelManager.js` |
+| **任务系统** | `taoist_task_progress` | 当前任务索引、最高关卡记录、累计强化次数 | `TaskManager.js` |
 
 ---
 
@@ -20,31 +31,10 @@
 
 以下模块的数据目前仅保存在内存中，**页面刷新后会全部重置**：
 
-### 2.1 资源类 (Currency)
-- **金币 (Gold)**：重置为 0。
-- **元宝 (Ingot)**：重置为 0。
-- **灵符 (Lingfu)**：重置为 0。
-- **神兽精华 (Essence)**：重置为 15（初始值）。
-- **精华恢复进度**：重置，重新开始倒计时。
-
-### 2.2 养成进度类 (Progression)
-- **战宠 (Pets)**：所有已解锁战宠及其等级。刷新后仅保留初始战宠且等级为 0。
-- **修炼 (Cultivation)**：所有修炼项目（金币产出、全队攻击等）的当前等级。
-- **光环 (Aura)**：所有光环的当前等级。
-- **技能 (Skill)**：所有技能的解锁状态及等级。
-
-### 2.3 属性与加成类 (Stats)
-- **战斗倍速等级**：重置为 0。
-- **金币加成等级**：重置为 0。
-- **当前法力值 (Mana)**：重置为满值。
-- **生命值 (HP)**：战斗中重置为满值。
-
-### 2.4 游戏进度类 (Game Progress)
-- **当前关卡**：重置为第 0 层。
-- **任务系统 (Tasks)**：
-  - 当前进行的任务索引 (`currentTaskIndex`)。
-  - 历史最高关卡记录 (`maxLevelReached`)。
-  - 累计强化次数 (`totalUpgrades`)。
+### 2.1 战斗实时状态 (Real-time Combat)
+- **当前法力值 (Mana)**：刷新后重置为满值。
+- **生命值 (HP)**：刷新后重置为满值。
+- **技能 CD 与持续时间**：刷新后重置。
 
 ---
 
@@ -65,12 +55,11 @@
 
 为了提供完整的游戏体验，建议优先实现以下数据的持久化：
 
-1.  **资源与进度合集**：建议创建一个统一的 `taoist_player_save` 键，将金币、战宠等级、修炼等级等核心数据打包存储。
+1.  **普通关卡与任务同步**：这是目前最明显的体验断层，玩家刷新页面后需要重新从第 0 层开始打，且任务进度丢失。
 2.  **自动存档触发器**：
-    - 资源变动时（增加/消耗）。
-    - 强化成功/解锁新内容时。
-    - 关卡胜利/任务完成时。
-3.  **防作弊校验**：虽然是单机挂机游戏，但在持久化时可以加入简单的校验逻辑。
+    - 关卡胜利后立即保存关卡进度。
+    - 任务领取奖励后立即保存任务索引。
+3.  **数据版本控制**：随着开发进行，存储格式可能会变化，建议在 `taoist_currency_data` 等键中加入 `version` 字段以便平滑升级。
 
 ---
-*更新日期：2026-01-30*
+*更新日期：2026-01-31*

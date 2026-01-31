@@ -53,13 +53,13 @@ export class Entity {
   /**
    * 更新 Buff 计时器与效果
    */
-  updateBuffs(dt) {
+  updateBuffs(combatDt, rawDt) {
     for (let i = this.buffs.length - 1; i >= 0; i--) {
       const buff = this.buffs[i];
       
       // 处理持续性效果 (如中毒)
       if (buff.type === 'poison') {
-        buff.damageTimer = (buff.damageTimer || 0) + dt;
+        buff.damageTimer = (buff.damageTimer || 0) + combatDt;
         if (buff.damageTimer >= 1.0) {
           this.takeDamage(buff.value); // 这里的 value 是每秒伤害
           buff.damageTimer -= 1.0;
@@ -68,7 +68,8 @@ export class Entity {
 
       // duration 为 -1 表示永久
       if (buff.duration !== -1) {
-        buff.timer -= dt;
+        // Buff 持续时间不受战斗加速影响，使用 rawDt
+        buff.timer -= rawDt;
         if (buff.timer <= 0) {
           this.buffs.splice(i, 1);
         }
@@ -171,7 +172,7 @@ export class Entity {
     this.y = Math.max(minY, Math.min(maxY, this.y));
   }
 
-  update(dt, engine) {
+  update(combatDt, rawDt, engine) {
     // 基类不实现具体逻辑
   }
 

@@ -13,15 +13,15 @@ export class Pet extends Entity {
     this.deployDelay = options.deployDelay || 0; // 出击延迟(秒)
   }
 
-  update(dt, engine) {
+  update(combatDt, rawDt, engine) {
     if (this.isDead) return;
 
     // 更新 Buff
-    this.updateBuffs(dt);
+    this.updateBuffs(combatDt, rawDt);
 
     // 处理出击延迟
     if (this.deployDelay > 0) {
-      this.deployDelay -= dt;
+      this.deployDelay -= combatDt;
       return; // 延迟未结束，不执行任何逻辑
     }
 
@@ -45,8 +45,8 @@ export class Pet extends Entity {
         // 追击
         const dx = nearest.x - this.x;
         const dy = nearest.y - this.y;
-        this.x += (dx / minDist) * this.getFinalSpeed() * dt;
-        this.y += (dy / minDist) * this.getFinalSpeed() * dt;
+        this.x += (dx / minDist) * this.getFinalSpeed() * combatDt;
+        this.y += (dy / minDist) * this.getFinalSpeed() * combatDt;
       } else {
         // 攻击
         if (this.attackCooldown <= 0) {
@@ -57,7 +57,7 @@ export class Pet extends Entity {
     }
 
     if (this.attackCooldown > 0) {
-      this.attackCooldown -= dt;
+      this.attackCooldown -= combatDt;
     }
 
     // 出击后执行边界限制

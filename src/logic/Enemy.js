@@ -11,13 +11,13 @@ export class Enemy extends Entity {
     this.isWaiting = false;
   }
 
-  update(dt, engine) {
+  update(combatDt, rawDt, engine) {
     if (this.isDead) return;
 
     // 更新 Buff (处理中毒等)
-    this.updateBuffs(dt);
+    this.updateBuffs(combatDt, rawDt);
 
-    this.moveTimer -= dt;
+    this.moveTimer -= combatDt;
 
     if (this.moveTimer <= 0) {
       if (this.isWaiting) {
@@ -44,8 +44,8 @@ export class Enemy extends Entity {
       
       if (dist > 2) {
         const finalSpeed = this.getFinalSpeed();
-        this.x += (dx / dist) * finalSpeed * dt;
-        this.y += (dy / dist) * finalSpeed * dt;
+        this.x += (dx / dist) * finalSpeed * combatDt;
+        this.y += (dy / dist) * finalSpeed * combatDt;
       }
     }
 

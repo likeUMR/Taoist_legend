@@ -118,7 +118,7 @@ export class CombatEngine {
 
     // 1. 逻辑更新
     for (const entity of this.entities) {
-      entity.update(combatDt, this);
+      entity.update(combatDt, rawDt, this);
     }
 
     // 2. 物理修正 (挤开重叠)
