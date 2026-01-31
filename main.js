@@ -35,90 +35,8 @@ import { formatNumber } from './src/utils/format.js';
 import { AuraVisualRenderer } from './src/display/AuraVisualRenderer.js';
 import { audioManager } from './src/utils/AudioManager.js';
 import { GameConfig } from './src/logic/GameConfig.js';
-
-// --- 皮肤数据 ---
-const SKIN_NAMES = [
-  '狗', '獒', '狼', '狐', '豺', '豹', '麟', '狮', '虎', '象',
-  '猿', '犼', '貔', '貅', '獬', '豸', '饕', '餮', '穷', '奇',
-  '梼', '杌', '狰', '龙', '凤', '凰', '龟', '蛇', '鹤', '鹏',
-  '蛟', '螭', '虬', '狻', '猊', '狴', '犴', '囚', '牛', '睚'
-];
-
-/**
- * 初始化皮肤数据，包含档次和属性点分配
- */
-const SKINS = SKIN_NAMES.map((name, index) => {
-  let grade;
-  if (index < 16) { grade = 'C'; }
-  else if (index < 28) { grade = 'B'; }
-  else if (index < 36) { grade = 'A'; }
-  else { grade = 'S'; }
-
-  const points = GameConfig.SKIN_GRADE_POINTS[grade] || 0;
-
-  // 简单的确定性随机分配点数 (基于索引)
-  const bonuses = { hp: 0, atk: 0, critRate: 0, critDmg: 0, dodge: 0, combo: 0 };
-  const attrKeys = Object.keys(bonuses);
-  
-  for (let i = 0; i < points; i++) {
-    const attrIndex = (index * 7 + i * 3) % attrKeys.length;
-    bonuses[attrKeys[attrIndex]]++;
-  }
-
-  return { name, grade, bonuses, unlocked: name === '狗' }; // 默认仅解锁“狗”
-});
-
-let currentSkin = '狗'; // 初始皮肤
-let viewingSkinName = null; // 当前正在查看详情的皮肤
-window.currentSkin = currentSkin; // 暴露给渲染器
-
-/**
- * 计算所有已解锁皮肤的总加成
- */
-function calculateSkinBonuses() {
-  const total = {
-    hp: 0, atk: 0, critRate: 0, critDmg: 0, dodge: 0, combo: 0
-  };
-
-  SKINS.forEach(skin => {
-    if (skin.unlocked) {
-      total.hp += skin.bonuses.hp * 0.005;
-      total.atk += skin.bonuses.atk * 0.003;
-      total.critRate += skin.bonuses.critRate * 0.005;
-      total.critDmg += skin.bonuses.critDmg * 0.01;
-      total.dodge += skin.bonuses.dodge * 0.003;
-      total.combo += skin.bonuses.combo * 0.002;
-    }
-  });
-
-  return total;
-}
-
-/**
- * 更新皮肤界面的属性加成面板
- */
-function updateSkinBonusUI() {
-  const bonuses = calculateSkinBonuses();
-  const bonusGrid = skinModal.querySelector('.skin-bonus-grid');
-  if (!bonusGrid) return;
-
-  const items = bonusGrid.querySelectorAll('.bonus-item .bonus-val');
-  if (items.length >= 6) {
-    items[0].textContent = `x${(1 + bonuses.hp).toFixed(3)}`;
-    items[1].textContent = `x${(1 + bonuses.atk).toFixed(3)}`;
-    items[2].textContent = `+${(bonuses.critRate * 100).toFixed(1)}%`;
-    items[3].textContent = `+${(bonuses.critDmg * 100).toFixed(1)}%`;
-    items[4].textContent = `+${(bonuses.dodge * 100).toFixed(1)}%`;
-    items[5].textContent = `+${(bonuses.combo * 100).toFixed(1)}%`;
-  }
-
-  // 同时更新解锁进度
-  const unlockedCount = SKINS.filter(s => s.unlocked).length;
-  const statusHeader = skinModal.querySelector('.skin-status-header');
-  if (statusHeader) {
-    statusHeader.textContent = `已解锁：${unlockedCount}/${SKINS.length}`;
-  }
-}
+import { SkinManager } from './src/logic/SkinManager.js';
+import { Registry } from './src/core/Registry.js';
 
 // --- 界面控制逻辑 ---
 const petModal = document.getElementById('pet-modal');
@@ -136,10 +54,12 @@ const adventureModal = document.getElementById('adventure-modal');
 const settingsModal = document.getElementById('settings-modal');
 const storyModal = document.getElementById('story-modal');
 const skinModal = document.getElementById('skin-modal');
+const tutorialModal = document.getElementById('tutorial-modal');
 
 // 初始化管理器
 const currencyManager = new CurrencyManager();
 const videoManager = new VideoRewardManager();
+const skinManager = new SkinManager(currencyManager, audioManager);
 const cultivationManager = new CultivationManager(currencyManager);
 const auraManager = new AuraManager(currencyManager);
 const skillManager = new SkillManager(currencyManager);
@@ -153,12 +73,29 @@ const petManager = new PetManager(engine);
 const activeSkillManager = new ActiveSkillManager(skillManager, statManager, petManager);
 const passiveSkillManager = new PassiveSkillManager(skillManager, engine, renderer);
 
-window.activeSkillManager = activeSkillManager;
-window.passiveSkillManager = passiveSkillManager;
-window.engine = engine; // 方便 DOMRenderer 中的飞行物逻辑访问引擎
+// 注册到 Registry
+Registry.register('currencyManager', currencyManager);
+Registry.register('videoManager', videoManager);
+Registry.register('skinManager', skinManager);
+Registry.register('cultivationManager', cultivationManager);
+Registry.register('auraManager', auraManager);
+Registry.register('skillManager', skillManager);
+Registry.register('trialManager', trialManager);
+Registry.register('statManager', statManager);
+Registry.register('petCollection', petCollection);
+Registry.register('engine', engine);
+Registry.register('renderer', renderer);
+Registry.register('enemyManager', enemyManager);
+Registry.register('petManager', petManager);
+Registry.register('activeSkillManager', activeSkillManager);
+Registry.register('passiveSkillManager', passiveSkillManager);
+Registry.register('audioManager', audioManager);
+
 const taskManager = new TaskManager(currencyManager);
+Registry.register('taskManager', taskManager);
 const taskRenderer = new TaskUIRenderer('.quest-scroll', taskManager);
 const onlineRewardManager = new OnlineRewardManager(currencyManager);
+Registry.register('onlineRewardManager', onlineRewardManager);
 const onlineRewardRenderer = new OnlineRewardUIRenderer(onlineModal.querySelector('.pet-list-content'), onlineRewardManager);
 
 // 覆写在线奖励渲染器的更新逻辑，增加拖拽保护
@@ -173,9 +110,11 @@ onlineRewardManager.onUpdate = () => {
 };
 
 const storyManager = new StoryManager(petCollection);
+Registry.register('storyManager', storyManager);
 const storyUIRenderer = new StoryUIRenderer('story-modal', storyManager);
 
 const desktopManager = new AddDesktopManager(currencyManager);
+Registry.register('desktopManager', desktopManager);
 const desktopRenderer = new AddDesktopUIRenderer('#desktop-modal', desktopManager);
 desktopRenderer.bindEvents();
 
@@ -188,12 +127,6 @@ petCollection.onUpgradeSuccess = () => {
 taskManager.onUpdate = () => {
   taskRenderer.render();
 };
-
-// 暴露给全局，方便 UI 渲染器访问 (也可以通过构造函数传递，但这里为了方便直接挂在 window)
-window.currencyManager = currencyManager;
-window.statManager = statManager;
-window.videoManager = videoManager;
-window.onlineRewardManager = onlineRewardManager;
 
 // 初始化流程 (此处逻辑已移至文件末尾的 initGame)
 
@@ -251,6 +184,7 @@ const closeOnlineBtn = onlineModal.querySelector('.close-btn');
 const closeAdventureBtn = adventureModal.querySelector('.close-btn');
 const closeSettingsBtn = settingsModal.querySelector('.close-btn');
 const closeSkinBtn = skinModal.querySelector('.close-btn');
+const closeTutorialBtn = tutorialModal.querySelector('.close-btn');
 
 const petModalBody = petModal.querySelector('.modal-body');
 const bonusModalBody = bonusModal.querySelector('.modal-body');
@@ -264,13 +198,19 @@ const lingfuDisplay = document.getElementById('lingfu-val');
 
 // 初始化 UI 渲染器
 const petUIRenderer = new PetUIRenderer(petModalBody, petCollection);
-window.petUIRenderer = petUIRenderer; // 暴露给全局以便皮肤系统调用
+Registry.register('petUIRenderer', petUIRenderer);
 const bonusUIRenderer = new BonusUIRenderer(bonusModalBody, statManager);
+Registry.register('bonusUIRenderer', bonusUIRenderer);
 const speedUIRenderer = new SpeedUIRenderer(speedModalBody, statManager);
+Registry.register('speedUIRenderer', speedUIRenderer);
 const cultUIRenderer = new CultivationUIRenderer(cultModalBody.querySelector('.pet-list-content'), cultivationManager);
+Registry.register('cultUIRenderer', cultUIRenderer);
 const auraUIRenderer = new AuraUIRenderer(auraModal.querySelector('.modal-body'), auraManager);
+Registry.register('auraUIRenderer', auraUIRenderer);
 const skillUIRenderer = new SkillUIRenderer(skillModalBody, skillManager);
+Registry.register('skillUIRenderer', skillUIRenderer);
 const auraVisualRenderer = new AuraVisualRenderer(auraManager);
+Registry.register('auraVisualRenderer', auraVisualRenderer);
 
 // 获取等级角标元素
 const speedLevelBadge = document.querySelector('.col-right .buff-btn:nth-child(1) .level-badge-diamond span');
@@ -308,6 +248,10 @@ currencyManager.onUpdate = (val) => {
 currencyManager.onIngotUpdate = (val) => {
   if (ingotDisplay) {
     ingotDisplay.textContent = formatNumber(val, true);
+  }
+  // 联动更新皮肤抽取按钮状态
+  if (typeof skinManager !== 'undefined') {
+    skinManager.updateDrawButtonState();
   }
 };
 
@@ -676,266 +620,32 @@ function closeSettingsModal() {
 }
 
 // --- 皮肤面板逻辑 ---
-let skinScrollController = null;
-
 function openSkinModal() {
-  skinModal.classList.remove('hidden');
-  
-  updateSkinBonusUI(); // 更新总加成显示
-  
-  // 详情改为悬浮窗，初始不显示
-  const detailArea = document.getElementById('selected-skin-detail');
-  if (detailArea) {
-    detailArea.classList.add('hidden');
-    // 点击背景关闭
-    detailArea.onclick = (e) => {
-      if (e.target === detailArea) {
-        detailArea.classList.add('hidden');
-      }
-    };
-    // 同时也支持内部卡片的点击不穿透到背景
-    const detailCard = detailArea.querySelector('.detail-card');
-    if (detailCard) {
-      detailCard.onclick = (e) => e.stopPropagation();
-    }
-  }
-  
-  renderSkinList(); // 渲染皮肤列表
-  
-  const scrollView = skinModal.querySelector('.pet-scroll-view');
-  const scrollContent = skinModal.querySelector('.skin-grid');
-  
-  if (!skinScrollController && scrollView && scrollContent) {
-    skinScrollController = new ScrollController({
-      container: scrollView,
-      content: scrollContent
-    });
-  }
-  
-  requestAnimationFrame(() => {
-    if (skinScrollController) skinScrollController.updateBounds();
-  });
+  skinManager.openSkinModal(skinModal, ScrollController);
 }
-
-/**
- * 渲染皮肤列表
- */
-function renderSkinList() {
-  const skinGrid = skinModal.querySelector('.skin-grid');
-  if (!skinGrid) return;
-
-  const html = SKINS.map((skin, index) => {
-    const isCurrent = skin.name === currentSkin;
-    const isViewing = skin.name === (viewingSkinName || currentSkin);
-    const gradeClass = `grade-${skin.grade.toLowerCase()}`;
-    const displayName = skin.unlocked ? skin.name : '???';
-    const displayIcon = skin.unlocked ? skin.name : '?';
-    const circleClass = skin.unlocked ? 'blue' : 'gray';
-    
-    return `
-      <div class="skin-item ${isCurrent ? 'active' : ''} ${isViewing ? 'viewing' : ''} ${skin.unlocked ? '' : 'locked'}" data-skin="${skin.name}">
-        <div class="skin-card ${gradeClass}">
-          <div class="skin-pet-icon">
-            <div class="pet-icon-circle ${circleClass}">${displayIcon}</div>
-          </div>
-          <div class="skin-grade-badge">${skin.grade}级</div>
-          <div class="skin-no">No.${index + 1}</div>
-          ${isCurrent ? '<div class="skin-equipped-badge">已穿戴</div>' : ''}
-        </div>
-        <div class="skin-name">${displayName}</div>
-      </div>
-    `;
-  }).join('');
-
-  skinGrid.innerHTML = html;
-
-  // 更新解锁进度文本
-  const statusHeader = skinModal.querySelector('.skin-status-header');
-  if (statusHeader) {
-    const unlockedCount = SKINS.filter(s => s.unlocked).length;
-    statusHeader.textContent = `已解锁：${unlockedCount}/${SKINS.length}`;
-  }
-
-  // 绑定点击事件
-  skinGrid.querySelectorAll('.skin-item').forEach(item => {
-    item.addEventListener('click', () => {
-      audioManager.playClick();
-      const skinName = item.dataset.skin;
-      const skin = SKINS.find(s => s.name === skinName);
-      
-      // 更新正在查看的皮肤
-      viewingSkinName = skinName;
-      renderSkinDetail(skinName);
-      
-      // 重新渲染列表以更新选中效果 (viewing class)
-      renderSkinList();
-
-      if (skin && skin.unlocked) {
-        changePetSkin(skinName);
-      }
-    });
-  });
-}
-
-/**
- * 渲染单个皮肤的详细属性
- */
-function renderSkinDetail(skinName) {
-  const detailArea = document.getElementById('selected-skin-detail');
-  if (!detailArea) return;
-
-  const skin = SKINS.find(s => s.name === skinName);
-  if (!skin) {
-    detailArea.classList.add('hidden');
-    return;
-  }
-
-  detailArea.classList.remove('hidden');
-
-  // 更新图标和基本信息
-  const iconCircle = detailArea.querySelector('.pet-icon-circle');
-  const nameEl = detailArea.querySelector('.detail-name');
-  const gradeBadge = detailArea.querySelector('.detail-grade-badge');
-  const descEl = detailArea.querySelector('.detail-desc');
-
-  if (skin.unlocked) {
-    iconCircle.textContent = skin.name;
-    iconCircle.className = 'pet-icon-circle blue';
-    nameEl.textContent = skin.name;
-    descEl.textContent = `该皮肤已解锁，属性加成已永久生效`;
-  } else {
-    iconCircle.textContent = '?';
-    iconCircle.className = 'pet-icon-circle gray';
-    nameEl.textContent = '未解锁';
-    descEl.textContent = `解锁后可获得下方属性加成`;
-  }
-
-  gradeBadge.textContent = `${skin.grade}级`;
-  gradeBadge.className = `detail-grade-badge grade-${skin.grade.toLowerCase()}`;
-
-  // 更新属性列表
-  const bonusItems = detailArea.querySelectorAll('.detail-bonus-grid .bonus-item .bonus-val');
-  if (bonusItems.length >= 6) {
-    const b = skin.bonuses;
-    bonusItems[0].textContent = `+${(b.hp * 0.5).toFixed(1)}%`;
-    bonusItems[1].textContent = `+${(b.atk * 0.3).toFixed(1)}%`;
-    bonusItems[2].textContent = `+${(b.critRate * 0.5).toFixed(1)}%`;
-    bonusItems[3].textContent = `+${(b.critDmg * 1).toFixed(1)}%`;
-    bonusItems[4].textContent = `+${(b.dodge * 0.3).toFixed(1)}%`;
-    bonusItems[5].textContent = `+${(b.combo * 0.2).toFixed(1)}%`;
-  }
-}
-
-/**
- * 切换皮肤逻辑
- */
-function changePetSkin(skinName) {
-  if (currentSkin === skinName) return;
-  
-  currentSkin = skinName;
-  window.currentSkin = skinName; // 同步给全局变量
-  
-  // 1. 更新主界面战宠外观 (如果有全局引用)
-  if (window.petUIRenderer) {
-    window.petUIRenderer.render(); // 重新渲染战宠列表以更新图标
-  }
-  
-  // 2. 更新皮肤界面显示
-  renderSkinList();
-  
-  // 3. 提示
-  console.log(`已切换至皮肤: ${skinName}`);
-}
-
-/**
- * 随机解锁一个指定档次的皮肤
- * @param {string} grade 档次 ('C', 'B', 'A', 'S')
- * @returns {object} { success: boolean, skin: object, isNew: boolean, rewardLingfu: number }
- */
-function unlockRandomSkin(grade) {
-  const possibleSkins = SKINS.filter(s => s.grade === grade.toUpperCase());
-  if (possibleSkins.length === 0) return { success: false };
-
-  const randomIndex = Math.floor(Math.random() * possibleSkins.length);
-  const selectedSkin = possibleSkins[randomIndex];
-
-  let isNew = false;
-  let rewardLingfu = 0;
-
-  if (!selectedSkin.unlocked) {
-    selectedSkin.unlocked = true;
-    isNew = true;
-    updateSkinProgressUI();
-  } else {
-    // 重复获取，转换为灵符：100 * 属性点
-    const points = GameConfig.SKIN_GRADE_POINTS[selectedSkin.grade] || 0;
-    rewardLingfu = points * 100;
-    currencyManager.addLingfu(rewardLingfu);
-  }
-
-  // 如果皮肤界面打开着，刷新它
-  if (!skinModal.classList.contains('hidden')) {
-    viewingSkinName = selectedSkin.name;
-    renderSkinDetail(viewingSkinName);
-    renderSkinList();
-    updateSkinBonusUI();
-  }
-
-  return { success: true, skin: selectedSkin, isNew, rewardLingfu };
-}
-
-/**
- * 抽取皮肤逻辑
- */
-function drawSkin() {
-  audioManager.playClick();
-  const COST = 500;
-  // 使用 spendIngot 方法来检查余额并扣除，它会自动触发 UI 更新
-  if (!currencyManager.spendIngot(COST)) {
-    showFeedback(false, '元宝不足！');
-    return;
-  }
-
-  // 概率计算: C: 70%, B: 25%, A: 4.5%, S: 0.5%
-  const rand = Math.random() * 100;
-  let grade = 'C';
-  if (rand < 0.5) {
-    grade = 'S';
-  } else if (rand < 5.0) {
-    grade = 'A';
-  } else if (rand < 30.0) {
-    grade = 'B';
-  } else {
-    grade = 'C';
-  }
-
-  const result = unlockRandomSkin(grade);
-  if (result.success) {
-    const { skin, isNew, rewardLingfu } = result;
-    let message = '';
-    if (isNew) {
-      message = `抽中 ${grade}级皮肤：${skin.name}！`;
-    } else {
-      message = `抽中重复皮肤 ${skin.name}，转化为 ${rewardLingfu} 灵符`;
-    }
-    showFeedback(true, message);
-  }
-}
-
-// 绑定皮肤抽取按钮
-const skinDrawBtn = document.getElementById('skin-draw-btn');
-if (skinDrawBtn) {
-  skinDrawBtn.addEventListener('click', () => {
-    drawSkin();
-  });
-}
-
-window.unlockRandomSkin = unlockRandomSkin;
-window.calculateSkinBonuses = calculateSkinBonuses; // 暴露给战斗逻辑
 
 function closeSkinModal() {
+  skinManager.skinModal = skinModal; // 保持引用一致性（如果需要）
   skinModal.classList.add('hidden');
 }
+
+// --- 教程面板逻辑 ---
+function openTutorialModal() {
+  tutorialModal.classList.remove('hidden');
+}
+
+function closeTutorialModal() {
+  tutorialModal.classList.add('hidden');
+}
+
+// 抽取皮肤逻辑
+function drawSkin() {
+  skinManager.drawSkin(skinModal, showFeedback);
+}
+
+// 暴露给外部
+window.calculateSkinBonuses = () => skinManager.calculateSkinBonuses();
+window.unlockRandomSkin = (grade) => skinManager.unlockRandomSkin(grade, skinModal);
 
 // --- 主循环与更新 ---
 function openStoryModal() {
@@ -1020,6 +730,16 @@ petModalBody.addEventListener('click', (e) => {
     petScrollController.updateBounds();
   }
 });
+
+// 皮肤面板内部逻辑
+if (skinModal) {
+  const skinDrawBtn = skinModal.querySelector('#skin-draw-btn');
+  if (skinDrawBtn) {
+    skinDrawBtn.addEventListener('click', () => {
+      drawSkin();
+    });
+  }
+}
 
 // 主动技能点击处理
 const activeSkillSlots = document.querySelectorAll('.skill-slot.active-skill');
@@ -1255,11 +975,7 @@ function updateMainManaBar() {
 
 // 更新主界面皮肤进度
 function updateSkinProgressUI() {
-  const skinProgressSmall = document.querySelector('.skin-progress-small');
-  if (!skinProgressSmall) return;
-  
-  const unlockedCount = SKINS.filter(s => s.unlocked).length;
-  skinProgressSmall.textContent = `${unlockedCount}/${SKINS.length}`;
+  skinManager.updateSkinProgressUI();
 }
 
 // 更新主界面挂机按钮时间
@@ -1469,6 +1185,13 @@ if (settingsBtn) {
     e.stopPropagation();
     audioManager.playClick();
     openSettingsModal();
+
+    // 如果设置引导还在显示，点击后移除
+    if (settingsTutorialContainer) {
+      settingsTutorialContainer.remove();
+      settingsTutorialContainer = null;
+      GameConfig.setStorageItem('tutorial_settings_done', 'true');
+    }
   });
 }
 
@@ -1496,7 +1219,8 @@ const modalConfigs = [
   { modal: adventureModal, panel: '.adventure-panel', closer: closeAdventureModal },
   { modal: settingsModal, panel: '.settings-panel', closer: closeSettingsModal },
   { modal: storyModal, panel: '.story-panel', closer: closeStoryModal },
-  { modal: skinModal, panel: '.skin-panel', closer: closeSkinModal }
+  { modal: skinModal, panel: '.skin-panel', closer: closeSkinModal },
+  { modal: tutorialModal, panel: '.tutorial-panel', closer: closeTutorialModal }
 ];
 
 modalConfigs.forEach(({ modal, panel, closer }) => {
@@ -1613,6 +1337,14 @@ if (settingsModal) {
         
         // 点击复选框也播放音效
         audioManager.playClick();
+      }
+
+      // 处理查看教程按钮
+      const tutorialBtn = e.target.closest('#show-tutorial-btn');
+      if (tutorialBtn) {
+        audioManager.playClick();
+        closeSettingsModal(); // 先关闭设置面板
+        openTutorialModal();  // 再打开教程面板
       }
     });
   }
@@ -1776,28 +1508,48 @@ petManager.setWorldBounds(petBounds);
 // 核心点击出击逻辑：点击道士（meditator）提前让下一个战宠开始行动
 const meditator = document.querySelector('.meditator');
 let tutorialContainer = null;
+let settingsTutorialContainer = null;
 
 // 初始化教程提示
 function initTutorial() {
+  // 1. 道士点击引导
   const isTutorialDone = GameConfig.getStorageItem('tutorial_strike_done');
-  if (isTutorialDone || !meditator) return;
+  if (!isTutorialDone && meditator) {
+    // 创建教程容器
+    tutorialContainer = document.createElement('div');
+    tutorialContainer.className = 'tutorial-hint-container';
+    
+    // 创建标记点
+    const marker = document.createElement('div');
+    marker.className = 'tutorial-marker';
+    
+    // 创建提示文字
+    const text = document.createElement('div');
+    text.className = 'tutorial-text';
+    text.innerText = 'CLICK';
+    
+    tutorialContainer.appendChild(marker);
+    tutorialContainer.appendChild(text);
+    meditator.parentElement.appendChild(tutorialContainer);
+  }
 
-  // 创建教程容器
-  tutorialContainer = document.createElement('div');
-  tutorialContainer.className = 'tutorial-hint-container';
-  
-  // 创建标记点
-  const marker = document.createElement('div');
-  marker.className = 'tutorial-marker';
-  
-  // 创建提示文字
-  const text = document.createElement('div');
-  text.className = 'tutorial-text';
-  text.innerText = 'CLICK';
-  
-  tutorialContainer.appendChild(marker);
-  tutorialContainer.appendChild(text);
-  meditator.parentElement.appendChild(tutorialContainer);
+  // 2. 设置/教程点击引导
+  const isSettingsTutorialDone = GameConfig.getStorageItem('tutorial_settings_done');
+  if (!isSettingsTutorialDone && settingsBtn) {
+    settingsTutorialContainer = document.createElement('div');
+    settingsTutorialContainer.className = 'tutorial-hint-container settings-tutorial';
+    
+    const marker = document.createElement('div');
+    marker.className = 'tutorial-marker';
+    
+    const text = document.createElement('div');
+    text.className = 'tutorial-text';
+    text.innerText = 'TUTORIAL';
+    
+    settingsTutorialContainer.appendChild(marker);
+    settingsTutorialContainer.appendChild(text);
+    settingsBtn.appendChild(settingsTutorialContainer);
+  }
 }
 
 if (meditator) {
