@@ -66,45 +66,171 @@ export class AudioManager {
   }
 
   /**
-   * 开启背景音乐 (生成式氛围音乐)
+   * 开启背景音乐 (传奇风格：A-A-B-C 史诗循环)
    */
   startBGM() {
     if (!this.context || this.bgmTimer) return;
 
-    const playNote = () => {
+    const tempo = 125;
+    const stepTime = 60 / tempo / 2; // 八分音符 (约 0.24s)
+    const startTime = performance.now();
+    let lastStep = -1;
+
+    // 音高定义
+    const A2 = 110.00, G2 = 98.00, F2 = 87.31, E2 = 82.41;
+    const E3 = 164.81, A3 = 220.00, B3 = 246.94, C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00;
+    
+    // A 段：英雄动机 (稳重、经典)
+    const melodyA = [
+      [A3, 2, 0.8], [null, 2, 0], [A3, 2, 0.8], [null, 2, 0],
+      [C4, 1, 0.7], [D4, 1, 0.7], [E4, 4, 1.0], [null, 2, 0],
+      [E4, 2, 0.8], [null, 2, 0], [D4, 1, 0.7], [C4, 1, 0.7],
+      [B3, 2, 0.6], [G4, 2, 0.6], [A3, 8, 1.0]
+    ];
+
+    // B 段：张力变奏 (音调升高，增强情绪)
+    const melodyB = [
+      [A3, 2, 0.8], [null, 2, 0], [C4, 2, 0.8], [null, 2, 0],
+      [D4, 1, 0.7], [E4, 1, 0.7], [G4, 4, 1.2], [null, 2, 0],
+      [G4, 2, 1.0], [F4, 2, 0.9], [E4, 2, 0.8], [D4, 2, 0.7],
+      [E4, 4, 0.9], [B3, 2, 0.7], [A3, 2, 0.8], [null, 2, 0]
+    ];
+
+    // C 段：回旋转场 (节奏密集，准备回到 A)
+    const melodyC = [
+      [E4, 1, 0.8], [D4, 1, 0.7], [C4, 1, 0.7], [B3, 1, 0.6],
+      [A3, 2, 0.9], [E3, 2, 0.7], [A3, 4, 1.0], [null, 2, 0],
+      [G4, 2, 0.8], [E4, 2, 0.8], [C4, 2, 0.8], [A3, 2, 0.8],
+      [B3, 2, 0.7], [C4, 2, 0.7], [D4, 2, 0.7], [E4, 2, 0.7]
+    ];
+
+    const playSequence = () => {
       if (!this.musicEnabled) {
         this.bgmTimer = null;
         return;
       }
 
-      const now = this.context.currentTime;
-      // 宫商角徵羽 (C4, D4, E4, G4, A4) 的频率
-      const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-      const freq = pentatonic[Math.floor(Math.random() * pentatonic.length)];
-      
-      const osc = this.context.createOscillator();
-      const gain = this.context.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      
-      // 极长的淡入淡出，营造空灵感
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 1);
-      gain.gain.linearRampToValueAtTime(0, now + 4);
-      
-      osc.connect(gain);
-      gain.connect(this.musicGain);
-      
-      osc.start(now);
-      osc.stop(now + 4);
+      // 使用真实时间计算当前步数，确保“错过就错过”，解决后台切回后的堆叠爆音问题
+      const elapsed = (performance.now() - startTime) / 1000;
+      const currentStep = Math.floor(elapsed / stepTime);
 
-      // 每隔 2-4 秒播放下一个音符
-      const nextDelay = 2000 + Math.random() * 2000;
-      this.bgmTimer = setTimeout(playNote, nextDelay);
+      // 只有当步数发生变化且音频上下文正常运行时才播放
+      if (currentStep !== lastStep && this.context.state === 'running') {
+        lastStep = currentStep;
+        const now = this.context.currentTime;
+        const phraseLength = 32;
+        const currentPhrase = Math.floor((currentStep / phraseLength) % 4);
+        const currentStepInPhrase = currentStep % phraseLength;
+
+        // 选择当前乐句的旋律
+        let currentMelody;
+        if (currentPhrase === 0 || currentPhrase === 1) currentMelody = melodyA;
+        else if (currentPhrase === 2) currentMelody = melodyB;
+        else currentMelody = melodyC;
+
+        // 1. 战鼓逻辑 (Kick)
+        if (currentStepInPhrase % 4 === 0) {
+          this.playKick(now, 0.4);
+        } else if (currentStepInPhrase % 16 === 14) {
+          this.playKick(now, 0.15);
+        }
+
+        // 2. 贝斯逻辑 (Bass)
+        let bassFreq = A2;
+        if (currentPhrase === 2 && currentStepInPhrase >= 16) bassFreq = G2;
+        if (currentPhrase === 3 && currentStepInPhrase >= 24) bassFreq = E2;
+
+        if (currentStepInPhrase % 4 === 0) {
+          this.playBass(bassFreq, now, stepTime * 3.5);
+        }
+
+        // 3. 旋律逻辑
+        let accumulatedSteps = 0;
+        for (const [freq, duration, vol] of currentMelody) {
+          if (currentStepInPhrase >= accumulatedSteps && currentStepInPhrase < accumulatedSteps + duration) {
+            if (freq && currentStepInPhrase === accumulatedSteps) {
+              this.playMelodyNote(freq, now, stepTime * duration * 0.9, vol);
+            }
+            break;
+          }
+          accumulatedSteps += duration;
+        }
+      }
+
+      // 稍微缩短轮询间隔，确保在高 BPM 或后台恢复时能及时捕捉到 step 变化
+      this.bgmTimer = setTimeout(playSequence, stepTime * 500);
     };
 
-    playNote();
+    playSequence();
+  }
+
+  /**
+   * 播放战鼓音效 (Kick)
+   */
+  playKick(time, vol = 0.4) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+    
+    gain.gain.setValueAtTime(vol, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+    
+    osc.connect(gain);
+    gain.connect(this.musicGain);
+    
+    osc.start(time);
+    osc.stop(time + 0.5);
+  }
+
+  /**
+   * 播放贝斯音效 (Bass)
+   */
+  playBass(freq, time, duration) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    
+    osc.type = 'triangle'; // 三角波更有厚度
+    osc.frequency.setValueAtTime(freq, time);
+    
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
+    gain.gain.linearRampToValueAtTime(0, time + duration);
+    
+    osc.connect(gain);
+    gain.connect(this.musicGain);
+    
+    osc.start(time);
+    osc.stop(time + duration);
+  }
+
+  /**
+   * 播放旋律音符
+   */
+  playMelodyNote(freq, time, duration, volScale) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    const filter = this.context.createBiquadFilter();
+    
+    osc.type = 'sawtooth'; // 锯齿波更有史诗感
+    osc.frequency.setValueAtTime(freq, time);
+    
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2000, time);
+    filter.frequency.exponentialRampToValueAtTime(500, time + duration);
+
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(0.2 * volScale, time + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+    
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.musicGain);
+    
+    osc.start(time);
+    osc.stop(time + duration);
   }
 
   /**
