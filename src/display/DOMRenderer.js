@@ -213,13 +213,15 @@ export class DOMRenderer {
       atkHTML = `<div class="entity-atk-label">攻 ${entity.atk}</div>`;
     }
 
+    const iconText = entity.side === 'enemy' ? '敌' : (window.currentSkin || entity.name);
+
     div.innerHTML = `
       ${atkHTML}
       <div class="entity-hp-bar">
         <div class="hp-fill"></div>
       </div>
       <div class="entity-vfx-layer"></div>
-      <div class="entity-icon">${window.currentSkin || entity.name}</div>
+      <div class="entity-icon">${iconText}</div>
     `;
     return div;
   }
