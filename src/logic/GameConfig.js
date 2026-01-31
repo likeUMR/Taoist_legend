@@ -4,7 +4,7 @@
 export const GameConfig = {
   // 是否启用持久化存储（读取本地存档）
   // 设置为 false 时，每次刷新页面都会从初始状态开始，不会读取 localStorage
-  USE_PERSISTENCE: false,
+  USE_PERSISTENCE: true,
 
   // 皮肤各档次提供的属性点
   SKIN_GRADE_POINTS: {
