@@ -190,8 +190,12 @@ body {
   background-size: 100% 40px;
   display: flex;
   flex-direction: column;
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   flex-shrink: 0;
+  transform-origin: center center;
 }
 
 /* 顶部资源栏 */

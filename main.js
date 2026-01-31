@@ -1794,6 +1794,8 @@ async function initGame() {
   updateSkinProgressUI(); // 初始更新皮肤进度
   updateOnlineRewardButton(); // 初始更新在线奖励按钮状态
 
+  applyScaling(); // 初始应用屏幕缩放适配
+
   // 4. 等待用户点击“开始游戏”
   if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -1829,6 +1831,29 @@ async function initGame() {
     gameLoop();
   }
 }
+
+/**
+ * 自动适配屏幕缩放
+ */
+function applyScaling() {
+  const container = document.getElementById('game-container');
+  if (!container) return;
+
+  const baseWidth = 540;
+  const baseHeight = 1200;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  // 计算宽高缩放比，取最小值以确保完全显示在屏幕内
+  const scale = Math.min(screenWidth / baseWidth, screenHeight / baseHeight);
+
+  // 始终根据计算出的 scale 进行缩放，并保持居中
+  container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+
+// 监听窗口变化
+window.addEventListener('resize', applyScaling);
+window.addEventListener('orientationchange', applyScaling);
 
 // 游戏主循环
 let lastAfkUpdateTime = 0;

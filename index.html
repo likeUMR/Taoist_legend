@@ -8,34 +8,22 @@
     <link rel="manifest" href="./manifest.json" />
   </head>
   <body>
-    <!-- 开始游戏界面 -->
-    <div id="start-screen" class="start-screen">
-      <div class="start-content">
-        <div class="start-bg-watermark">☯</div>
-        <h1 class="start-title">道士传奇</h1>
-        <div class="loading-container">
-          <p class="loading-text">道士15狗，全区横着走...</p>
-          <div class="loading-bar">
-            <div class="loading-fill"></div>
-          </div>
-        </div>
-        <button id="start-game-btn" class="start-btn hidden">开始游戏</button>
-        <div class="start-footer">v1.0.4 &copy; 2026</div>
-      </div>
-    </div>
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then(reg => {
-            console.log('SW registered:', reg);
-          }).catch(err => {
-            console.log('SW registration failed:', err);
-          });
-        });
-      }
-    </script>
     <div id="game-container">
+      <!-- 开始游戏界面 -->
+      <div id="start-screen" class="start-screen">
+        <div class="start-content">
+          <div class="start-bg-watermark">☯</div>
+          <h1 class="start-title">道士传奇</h1>
+          <div class="loading-container">
+            <p class="loading-text">道士15狗，全区横着走...</p>
+            <div class="loading-bar">
+              <div class="loading-fill"></div>
+            </div>
+          </div>
+          <button id="start-game-btn" class="start-btn hidden">开始游戏</button>
+          <div class="start-footer">v1.0.5 &copy; 2025</div>
+        </div>
+      </div>
       <!-- 1. 顶部资源栏 -->
       <header class="top-bar">
         <div class="res-group">
@@ -701,6 +689,17 @@
       </div>
     </div>
 
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then(reg => {
+            console.log('SW registered:', reg);
+          }).catch(err => {
+            console.log('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
     <script type="module" src="main.js"></script>
   </body>
 </html>
