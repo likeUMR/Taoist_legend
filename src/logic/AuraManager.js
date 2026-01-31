@@ -32,7 +32,7 @@ export class AuraManager {
    */
   async init() {
     try {
-      const response = await fetch('./public/data/upgrades.csv');
+      const response = await fetch('./data/upgrades.csv');
       const csvText = await response.text();
       const lines = csvText.split('\n');
       

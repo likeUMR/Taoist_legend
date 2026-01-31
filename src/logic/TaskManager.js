@@ -20,7 +20,7 @@ export class TaskManager {
    */
   async init() {
     try {
-      const response = await fetch('./public/data/tasks.csv');
+      const response = await fetch('./data/tasks.csv');
       const csvText = await response.text();
       const lines = csvText.split('\n');
       

@@ -90,7 +90,7 @@ export class TrialManager {
    */
   async loadTrialData() {
     try {
-      const response = await fetch('./public/data/retry_speed_milestones.csv');
+      const response = await fetch('./data/retry_speed_milestones.csv');
       const csvText = await response.text();
       const lines = csvText.split('\n');
       
