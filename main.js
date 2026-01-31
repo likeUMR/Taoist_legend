@@ -504,17 +504,25 @@ function closeOnlineModal() {
  * @param {string} skillName 
  */
 function flashSkillIcon(skillName) {
-   const slot = document.querySelector(`.skill-slot[data-skill="${skillName}"]`);
-   if (!slot) return;
- 
-   const flashClass = 'vfx-ui-skill-flash';
-   slot.classList.add(flashClass);
+  const slot = document.querySelector(`.skill-slot[data-skill="${skillName}"]`);
+  if (!slot) return;
+
+  const flashClass = 'vfx-ui-skill-flash';
   
+  // 1. 如果已经在闪烁，先移除类以重置动画 (支持高频触发)
+  slot.classList.remove(flashClass);
+  
+  // 2. 强制触发重绘 (reflow)，确保浏览器意识到类被移除又重新添加了，从而重新触发 CSS 动画
+  void slot.offsetWidth; 
+  
+  // 3. 重新添加闪烁类
+  slot.classList.add(flashClass);
+  
+  // 4. 使用 { once: true } 确保监听器在执行一次后自动移除，避免内存泄漏和逻辑干扰
   const onEnd = () => {
     slot.classList.remove(flashClass);
-    slot.removeEventListener('animationend', onEnd);
   };
-  slot.addEventListener('animationend', onEnd);
+  slot.addEventListener('animationend', onEnd, { once: true });
 }
 
 // 导出给逻辑层使用
@@ -803,7 +811,10 @@ function updateSkillsUI() {
     slot.style.visibility = level <= 0 ? 'hidden' : 'visible';
     
     // 被动技能始终保持灰色背景，只有在触发时通过 flashSkillIcon 闪烁金色
-    slot.classList.remove('usable');
+    // 只有在没有闪烁类时才移除 usable，避免干扰动画
+    if (!slot.classList.contains('vfx-ui-skill-flash')) {
+      slot.classList.remove('usable');
+    }
   });
 }
 
