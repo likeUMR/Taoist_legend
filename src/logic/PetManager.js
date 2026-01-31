@@ -41,7 +41,7 @@ export class PetManager {
    * @param {Array<{x: number, y: number}>} positions 预设的坐标点列表
    * @param {number} deployInterval 出击间隔(秒)，默认为 1s
    */
-  spawnPets(petsData, positions, deployInterval = 1.0) {
+  spawnPets(petsData, positions, deployInterval = 0.3) {
     const limit = Math.min(petsData.length, positions.length);
     
     // 检查是否开启了自动出击

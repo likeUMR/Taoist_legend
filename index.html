@@ -489,22 +489,39 @@
           </header>
           <div class="modal-body">
             <div class="settings-container">
-              <div class="setting-row">
-                <span class="setting-label">音效</span>
-                <div class="custom-checkbox checked" id="setting-sound"></div>
-              </div>
-              <div class="setting-row">
-                <span class="setting-label">音乐</span>
-                <div class="custom-checkbox checked" id="setting-music"></div>
-              </div>
-              <div class="setting-row">
-                <span class="setting-label">全屏</span>
-                <div class="custom-checkbox" id="setting-fullscreen"></div>
+              <!-- 音频设置 -->
+              <div class="settings-group">
+                <div class="settings-group-title">音频设置</div>
+                <div class="setting-row">
+                  <span class="setting-label">音效</span>
+                  <div class="custom-checkbox checked" id="setting-sound"></div>
+                </div>
+                <div class="setting-row">
+                  <span class="setting-label">音乐</span>
+                  <div class="custom-checkbox checked" id="setting-music"></div>
+                </div>
               </div>
 
-              <div class="setting-row">
-                <span class="setting-label">游戏教程</span>
-                <button class="settings-action-btn" id="show-tutorial-btn">查看</button>
+              <div class="settings-divider-simple"></div>
+
+              <!-- 游戏设置 -->
+              <div class="settings-group">
+                <div class="settings-group-title">系统设置</div>
+                <div class="setting-row">
+                  <span class="setting-label">全屏</span>
+                  <div class="custom-checkbox" id="setting-fullscreen"></div>
+                </div>
+              </div>
+
+              <div class="settings-divider-simple"></div>
+
+              <!-- 帮助与支持 -->
+              <div class="settings-group">
+                <div class="settings-group-title">帮助说明</div>
+                <div class="setting-row">
+                  <span class="setting-label">游戏教程</span>
+                  <button class="settings-action-btn" id="show-tutorial-btn">查看</button>
+                </div>
               </div>
 
               <!-- 分割线与版本信息 -->
