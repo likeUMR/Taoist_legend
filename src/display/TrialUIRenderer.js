@@ -53,7 +53,7 @@ export class TrialUIRenderer {
       } else if (type === 'mana') {
         const prevCap = i > 0 ? levels[i-1].manaCap : 0;
         const diff = level.manaCap - prevCap;
-        rewardText = `法力上限 +${diff.toFixed(1)}`;
+        rewardText = `法力上限 +${Math.round(diff)}`;
       }
       
       return `

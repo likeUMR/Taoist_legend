@@ -111,7 +111,7 @@ export class TrialManager {
           rewardGold: parseFloat(parts[4]),
           retryProb: parts[5] ? parseFloat(parts[5]) : 0,
           speedMultiplier: parts[6] ? parseFloat(parts[6]) : 0,
-          manaCap: parts[5] ? parseFloat(parts[5]) : 0, // 假设 ManaCap 数据存放在第6列(RetryProb同列)
+          manaCap: parts[9] ? parseFloat(parts[9]) : 0, 
           minClearTime: parts[7] ? parseFloat(parts[7]) : 0
         };
 
@@ -158,7 +158,7 @@ export class TrialManager {
 
   /**
    * 开始挑战试炼
-   * @param {string} type 'retry' | 'speed'
+   * @param {string} type 'retry' | 'speed' | 'mana'
    * @param {number} index 关卡索引 (0开始)
    */
   startTrial(type, index) {
