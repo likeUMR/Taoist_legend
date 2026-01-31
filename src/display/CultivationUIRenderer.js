@@ -58,7 +58,10 @@ export class CultivationUIRenderer {
     
     let showAdBtn = false;
     if (!isMax && !canAfford && window.videoManager && window.videoManager.getRemaining('cultivation') > 0) {
-      showAdBtn = true;
+      // 新增：检查价格许可限制
+      if (window.videoManager.isUpgradeAllowed(item.cost)) {
+        showAdBtn = true;
+      }
     }
 
     const adClass = showAdBtn ? 'ad-style' : '';

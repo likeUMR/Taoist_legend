@@ -25,8 +25,11 @@ export class SkillUIRenderer {
         if (skill.canAfford) {
           canUpgrade = true;
         } else if (videoManager && videoManager.getRemaining('skill') > 0) {
-          showAdBtn = true;
-          canUpgrade = true;
+          // 新增：检查价格许可限制
+          if (videoManager.isUpgradeAllowed(skill.upgradeCost)) {
+            showAdBtn = true;
+            canUpgrade = true;
+          }
         }
       }
 

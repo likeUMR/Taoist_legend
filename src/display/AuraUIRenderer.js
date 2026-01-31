@@ -16,7 +16,13 @@ export class AuraUIRenderer {
     const listHTML = listData.map(item => {
       const canAfford = currentGold >= item.upgradeCost;
       const hasAd = window.videoManager && window.videoManager.getRemaining('aura') > 0;
-      const showAdBtn = !canAfford && hasAd;
+      let showAdBtn = false;
+      if (!canAfford && hasAd) {
+        // 新增：检查价格许可限制
+        if (window.videoManager.isUpgradeAllowed(item.upgradeCost)) {
+          showAdBtn = true;
+        }
+      }
       
       const btnText = item.isBreakthrough ? '突破' : '升级';
       const rateText = item.hasMaxLevel ? '已满级' : (showAdBtn ? '' : `(${Math.floor(item.successRate * 100)}%)`);

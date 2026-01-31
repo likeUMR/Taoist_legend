@@ -64,7 +64,10 @@ export class PetUIRenderer {
           canAfford = currentGold >= pet.upgradeCost;
           // 如果买不起但有广告次数，且不是突破项
           if (!canAfford && window.videoManager && window.videoManager.getRemaining('pet') > 0) {
-            showAdBtn = true;
+            // 新增：检查价格许可限制（价格不能超过当前关卡产出的1000倍）
+            if (window.videoManager.isUpgradeAllowed(pet.upgradeCost)) {
+              showAdBtn = true;
+            }
           }
         }
       }

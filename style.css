@@ -110,7 +110,52 @@
   color: #9ca3af;
 }
 
-/* 之前存在的样式... */
+/* 5. 教程提示 */
+.tutorial-hint-container {
+  position: absolute;
+  bottom: 10px; /* 紧贴 90px 高的道士头部 */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse; /* 标记在下（贴近头），文字在上 */
+  align-items: center;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.tutorial-marker {
+  width: 20px;
+  height: 20px;
+  background: var(--yellow);
+  border: 2px solid #000;
+  border-radius: 50%;
+  animation: pulse-tutorial 1.5s infinite ease-in-out;
+}
+
+.tutorial-text {
+  margin-bottom: 6px; /* 与下方的标记点保持距离 */
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+  background: var(--yellow);
+  padding: 2px 8px;
+  border: 2px solid #000;
+  border-radius: 4px;
+  white-space: nowrap;
+  animation: bounce-tutorial 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-tutorial {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+  70% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+
+@keyframes bounce-tutorial {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 :root {
   --bg-black: #000;
   --game-white: #f3f4f6;

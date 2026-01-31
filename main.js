@@ -901,8 +901,14 @@ petModalBody.addEventListener('click', (e) => {
     const isAd = upgradeBtn.dataset.ad === 'true';
     
     if (isAd) {
-      videoManager.consumeVideo('pet');
-    }
+        // 再次检查限制逻辑，防止 UI 渲染漏洞或手动篡改
+        const petData = petCollection.getPet(id);
+        if (petData && !videoManager.isUpgradeAllowed(petData.upgradeCost)) {
+          console.error('【系统】升级费用过高，暂时无法通过视频升级');
+          return;
+        }
+        videoManager.consumeVideo('pet');
+      }
     
     const result = petCollection.upgradePet(petId, currencyManager, isAd);
     
@@ -1043,8 +1049,14 @@ cultModalBody.addEventListener('click', (e) => {
     const isAd = upgradeBtn.dataset.ad === 'true';
     
     if (isAd) {
-      videoManager.consumeVideo('cultivation');
-    }
+        // 再次检查限制逻辑
+        const item = cultivationManager.getUpgradeList().find(i => i.name === name);
+        if (item && !videoManager.isUpgradeAllowed(item.cost)) {
+          console.error('【系统】升级费用过高，暂时无法通过视频升级');
+          return;
+        }
+        videoManager.consumeVideo('cultivation');
+      }
     
     const result = cultivationManager.upgrade(name, isAd);
     
@@ -1067,6 +1079,12 @@ if (auraModalBody) {
       const isAd = upgradeBtn.dataset.ad === 'true';
       
       if (isAd) {
+        // 再次检查限制逻辑
+        const item = auraManager.getAuraListData().find(i => i.name === name);
+        if (item && !videoManager.isUpgradeAllowed(item.upgradeCost)) {
+          console.error('【系统】升级费用过高，暂时无法通过视频升级');
+          return;
+        }
         videoManager.consumeVideo('aura');
       }
       
@@ -1091,6 +1109,12 @@ skillModalBody.addEventListener('click', (e) => {
     const isAd = upgradeBtn.dataset.ad === 'true';
     
     if (isAd) {
+      // 再次检查限制逻辑
+      const skill = skillManager.getSkillListData().find(s => s.baseName === name);
+      if (skill && !videoManager.isUpgradeAllowed(skill.upgradeCost)) {
+        console.error('【系统】升级费用过高，暂时无法通过视频升级');
+        return;
+      }
       videoManager.consumeVideo('skill');
     }
     
@@ -1644,12 +1668,45 @@ petManager.setWorldBounds(petBounds);
 
 // 核心点击出击逻辑：点击道士（meditator）提前让下一个战宠开始行动
 const meditator = document.querySelector('.meditator');
+let tutorialContainer = null;
+
+// 初始化教程提示
+function initTutorial() {
+  const isTutorialDone = GameConfig.getStorageItem('tutorial_strike_done');
+  if (isTutorialDone || !meditator) return;
+
+  // 创建教程容器
+  tutorialContainer = document.createElement('div');
+  tutorialContainer.className = 'tutorial-hint-container';
+  
+  // 创建标记点
+  const marker = document.createElement('div');
+  marker.className = 'tutorial-marker';
+  
+  // 创建提示文字
+  const text = document.createElement('div');
+  text.className = 'tutorial-text';
+  text.innerText = 'CLICK';
+  
+  tutorialContainer.appendChild(marker);
+  tutorialContainer.appendChild(text);
+  meditator.parentElement.appendChild(tutorialContainer);
+}
+
 if (meditator) {
   meditator.style.cursor = 'pointer'; // 增加手型反馈
   meditator.addEventListener('click', (e) => {
     e.stopPropagation(); // 防止冒泡到 battle-wrap
     console.log('【系统】点击了道士，尝试提前出击战宠');
     const success = petManager.deployNextPet();
+    
+    // 如果教程还在显示，点击后移除
+    if (tutorialContainer) {
+      tutorialContainer.remove();
+      tutorialContainer = null;
+      GameConfig.setStorageItem('tutorial_strike_done', 'true');
+    }
+    
     if (!success) {
       console.log('【系统】当前没有排队中的战宠');
     }
@@ -1667,6 +1724,7 @@ const levelManager = new LevelManager({
   worldBounds: enemyBounds, // 关卡管理器的世界边界通常指战斗区
   taskManager // 注入任务管理器
 });
+window.levelManager = levelManager; // 暴露给全局以供视频升级限制检查
 
 // 关联 TrialManager 的 levelManager
 trialManager.levelManager = levelManager;
@@ -1758,9 +1816,11 @@ async function initGame() {
         startScreen.classList.add('fade-out');
         setTimeout(() => {
           startScreen.remove();
+          initTutorial(); // 初始化教程
           gameLoop(); // 正式开始游戏循环
         }, 800);
       } else {
+        initTutorial(); // 初始化教程
         gameLoop();
       }
     });

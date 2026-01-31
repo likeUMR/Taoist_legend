@@ -91,4 +91,33 @@ export class VideoRewardManager {
   getLimit(category) {
     return this.limits[category];
   }
+
+  /**
+   * 检查是否允许通过视频升级（基于当前关卡产出）
+   * @param {number} cost 升级所需金币
+   * @returns {boolean}
+   */
+  isUpgradeAllowed(cost) {
+     if (!window.levelManager) {
+       console.warn('【系统】LevelManager 未就绪，无法检查视频升级许可');
+       return false; // 严格模式：未就绪时不允许
+     }
+     
+     const currentLevel = window.levelManager.currentLevel;
+     const levelData = window.levelManager.levelDataMap.get(currentLevel);
+     
+     if (!levelData) {
+       console.warn(`【系统】找不到第 ${currentLevel} 层的关卡数据，无法检查视频升级许可`);
+       return true; // 如果找不到数据（可能是数据错误），允许升级以防卡死
+     }
+     
+     const maxAllowedCost = levelData.rewardGold * 1000;
+     const allowed = cost <= maxAllowedCost;
+     
+     if (!allowed) {
+       // console.log(`【系统】视频升级限制：当前价格 ${cost} > 关卡上限 ${maxAllowedCost}`);
+     }
+     
+     return allowed;
+   }
 }
